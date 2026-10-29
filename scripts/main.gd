@@ -303,14 +303,15 @@ func _input(event: InputEvent) -> void:
 
 func _set_game_state(new_state: GameState) -> void:
 	game_state = new_state
-	get_tree().paused = (game_state == GameState.COMMAND_MENU)
+	# Pause while command menu is open (including target selection from menu)
+	get_tree().paused = command_menu.is_open
 
 func _handle_normal_input(event: InputEvent) -> void:
 	if event.is_action_pressed("action_confirm"):
 		var leader = party[party_leader_index]
 		if leader.state == PlayerCharacter.State.IDLE:
-			_set_game_state(GameState.COMMAND_MENU)
 			command_menu.open_menu()
+			_set_game_state(GameState.COMMAND_MENU)
 	elif event.is_action_pressed("enemy_select_next") or event.is_action_pressed("enemy_select_prev"):
 		# Enter enemy selection mode
 		var alive_enemies = _get_alive_enemies()
@@ -325,6 +326,7 @@ func _handle_normal_input(event: InputEvent) -> void:
 func _handle_target_select_input(event: InputEvent) -> void:
 	var alive_enemies = _get_alive_enemies()
 	if alive_enemies.is_empty():
+		command_menu.close_menu()
 		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
 		return
@@ -340,10 +342,12 @@ func _handle_target_select_input(event: InputEvent) -> void:
 		var leader = party[party_leader_index]
 		var target = alive_enemies[selected_enemy_index]
 		leader.start_charge("attack", target, 1.5)
+		command_menu.close_menu()
 		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
 		selection_cursor.visible = false
 	elif event.is_action_pressed("action_cancel"):
+		command_menu.close_menu()
 		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
 		selection_cursor.visible = false
@@ -460,10 +464,12 @@ func _on_action_selected(action: String) -> void:
 	if action == "attack":
 		var alive_enemies = _get_alive_enemies()
 		if not alive_enemies.is_empty():
+			command_menu.lock_selection()
 			_set_game_state(GameState.TARGET_SELECT)
 			selected_enemy_index = 0
 			_show_enemy_info(alive_enemies[0])
 		else:
+			command_menu.close_menu()
 			_set_game_state(GameState.NORMAL)
 
 func _on_menu_cancelled() -> void:
