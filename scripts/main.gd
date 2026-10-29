@@ -97,16 +97,46 @@ func _create_player_character(char_name: String, color: Color) -> PlayerCharacte
 	mesh_inst.position.y = 0.8
 	character.add_child(mesh_inst)
 
-	# Name label
-	var label = Label3D.new()
-	label.text = char_name
-	label.position.y = 2.2
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.font_size = 48
-	label.pixel_size = 0.02
-	character.add_child(label)
+	# HP bar
+	_add_hp_bar(character, Color(0.2, 0.5, 1.0))
 
 	return character
+
+func _add_hp_bar(entity: CharacterBody3D, color: Color) -> void:
+	var bar_root = Node3D.new()
+	bar_root.name = "HPBar"
+	bar_root.position.y = 2.2
+
+	# Background quad
+	var bg = MeshInstance3D.new()
+	bg.name = "Background"
+	var bg_quad = QuadMesh.new()
+	bg_quad.size = Vector2(1.2, 0.12)
+	bg.mesh = bg_quad
+	var bg_mat = StandardMaterial3D.new()
+	bg_mat.albedo_color = Color(0.1, 0.1, 0.1, 0.8)
+	bg_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	bg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	bg_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	bg.set_surface_override_material(0, bg_mat)
+	bar_root.add_child(bg)
+
+	# Fill quad
+	var fill = MeshInstance3D.new()
+	fill.name = "Fill"
+	var fill_quad = QuadMesh.new()
+	fill_quad.size = Vector2(1.2, 0.12)
+	fill.mesh = fill_quad
+	var fill_mat = StandardMaterial3D.new()
+	fill_mat.albedo_color = color
+	fill_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	fill_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	fill.set_surface_override_material(0, fill_mat)
+	# Offset slightly forward so it renders on top of background
+	fill.position.z = -0.001
+	bar_root.add_child(fill)
+
+	entity.add_child(bar_root)
 
 func _build_camera() -> void:
 	camera_controller = CameraController.new()
@@ -238,14 +268,8 @@ func _create_enemy(index: int) -> Enemy:
 	mesh_inst.position.y = 0.7
 	enemy.add_child(mesh_inst)
 
-	# Name label
-	var label = Label3D.new()
-	label.text = stats.character_name
-	label.position.y = 2.0
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.font_size = 36
-	label.pixel_size = 0.02
-	enemy.add_child(label)
+	# HP bar
+	_add_hp_bar(enemy, Color(1.0, 0.6, 0.0))
 
 	return enemy
 

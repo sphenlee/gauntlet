@@ -25,7 +25,7 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var party_members: Array = []
 var mesh: MeshInstance3D
 var collision: CollisionShape3D
-var name_label: Label3D
+var hp_bar_fill: MeshInstance3D
 
 func _ready() -> void:
 	for child in get_children():
@@ -33,10 +33,10 @@ func _ready() -> void:
 			mesh = child
 		elif child is CollisionShape3D:
 			collision = child
-		elif child is Label3D:
-			name_label = child
-	if stats and name_label:
-		name_label.text = stats.character_name
+		elif child.name == "HPBar":
+			for sub in child.get_children():
+				if sub.name == "Fill":
+					hp_bar_fill = sub
 	think_timer = randf_range(0.5, think_delay)
 
 func _physics_process(delta: float) -> void:
@@ -55,6 +55,13 @@ func _physics_process(delta: float) -> void:
 			_handle_acting(delta)
 
 	move_and_slide()
+	_update_hp_bar()
+
+func _update_hp_bar() -> void:
+	if hp_bar_fill and stats:
+		var ratio = clampf(float(stats.current_hp) / float(stats.max_hp), 0.0, 1.0)
+		hp_bar_fill.scale.x = ratio
+		hp_bar_fill.position.x = -(1.0 - ratio) * 0.6
 
 func _handle_idle(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, 0, move_speed)
