@@ -2,11 +2,12 @@ class_name CharacterInfoPanel
 extends PanelContainer
 
 var party: Array[PlayerCharacter] = []
-var rows: Array[VBoxContainer] = []
+var rows: Array[HBoxContainer] = []
 var container: VBoxContainer
 
 func setup(p_party: Array[PlayerCharacter]) -> void:
 	container = VBoxContainer.new()
+	container.add_theme_constant_override("separation", 4)
 	add_child(container)
 	party = p_party
 	_build_rows()
@@ -17,67 +18,45 @@ func _build_rows() -> void:
 	rows.clear()
 
 	for character in party:
-		var row = VBoxContainer.new()
-		row.add_theme_constant_override("separation", 2)
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
 
-		# Charge bar
-		var charge_bar = ProgressBar.new()
-		charge_bar.name = "ChargeBar"
-		charge_bar.max_value = 1.0
-		charge_bar.value = 0.0
-		charge_bar.custom_minimum_size = Vector2(180, 12)
-		charge_bar.show_percentage = false
-		row.add_child(charge_bar)
-
-		# Charge label
-		var charge_label = Label.new()
-		charge_label.name = "ChargeLabel"
-		charge_label.text = ""
-		charge_label.add_theme_font_size_override("font_size", 10)
-		row.add_child(charge_label)
+		# Charge bar with overlaid text
+		var charge_container = _make_bar_with_label(
+			"ChargeBar", "ChargeLabel",
+			1.0, 0.0,
+			Vector2(100, 18),
+			""
+		)
+		row.add_child(charge_container)
 
 		# Name
 		var name_label = Label.new()
 		name_label.name = "NameLabel"
 		name_label.text = character.stats.character_name
-		name_label.add_theme_font_size_override("font_size", 14)
+		name_label.add_theme_font_size_override("font_size", 13)
+		name_label.custom_minimum_size = Vector2(55, 0)
+		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(name_label)
 
-		# HP bar
-		var hp_bar = ProgressBar.new()
-		hp_bar.name = "HPBar"
-		hp_bar.max_value = character.stats.max_hp
-		hp_bar.value = character.stats.current_hp
-		hp_bar.custom_minimum_size = Vector2(180, 10)
-		hp_bar.show_percentage = false
-		row.add_child(hp_bar)
+		# HP bar with overlaid text
+		var hp_container = _make_bar_with_label(
+			"HPBar", "HPLabel",
+			character.stats.max_hp, character.stats.current_hp,
+			Vector2(120, 18),
+			"%d/%d" % [character.stats.current_hp, character.stats.max_hp]
+		)
+		row.add_child(hp_container)
 
-		# HP label
-		var hp_label = Label.new()
-		hp_label.name = "HPLabel"
-		hp_label.text = "HP: %d/%d" % [character.stats.current_hp, character.stats.max_hp]
-		hp_label.add_theme_font_size_override("font_size", 10)
-		row.add_child(hp_label)
-
-		# MP bar
-		var mp_bar = ProgressBar.new()
-		mp_bar.name = "MPBar"
-		mp_bar.max_value = character.stats.max_mp
-		mp_bar.value = character.stats.current_mp
-		mp_bar.custom_minimum_size = Vector2(180, 10)
-		mp_bar.show_percentage = false
-		row.add_child(mp_bar)
-
-		# MP label
-		var mp_label = Label.new()
-		mp_label.name = "MPLabel"
-		mp_label.text = "MP: %d/%d" % [character.stats.current_mp, character.stats.max_mp]
-		mp_label.add_theme_font_size_override("font_size", 10)
-		row.add_child(mp_label)
-
-		# Separator
-		var sep = HSeparator.new()
-		row.add_child(sep)
+		# MP bar with overlaid text
+		var mp_container = _make_bar_with_label(
+			"MPBar", "MPLabel",
+			character.stats.max_mp, character.stats.current_mp,
+			Vector2(100, 18),
+			"%d/%d" % [character.stats.current_mp, character.stats.max_mp]
+		)
+		row.add_child(mp_container)
 
 		container.add_child(row)
 		rows.append(row)
@@ -85,6 +64,34 @@ func _build_rows() -> void:
 		# Connect signals
 		character.hp_changed.connect(_on_character_hp_changed)
 		character.charge_changed.connect(_on_character_charge_changed)
+
+func _make_bar_with_label(bar_name: String, label_name: String, max_val: float, val: float, min_size: Vector2, text: String) -> Control:
+	# Wrapper Control that stacks a ProgressBar and a Label on top
+	var wrapper = Control.new()
+	wrapper.custom_minimum_size = min_size
+
+	var bar = ProgressBar.new()
+	bar.name = bar_name
+	bar.max_value = max_val
+	bar.value = val
+	bar.show_percentage = false
+	bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrapper.add_child(bar)
+
+	var label = Label.new()
+	label.name = label_name
+	label.text = text
+	label.add_theme_font_size_override("font_size", 11)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Ensure text is readable over the bar
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	wrapper.add_child(label)
+
+	return wrapper
 
 func _process(_delta: float) -> void:
 	for i in range(party.size()):
@@ -95,9 +102,16 @@ func _process(_delta: float) -> void:
 		if not is_instance_valid(character) or not is_instance_valid(row):
 			continue
 
+		# Find bars and labels inside wrapper Controls
+		var charge_bar = _find_child_recursive(row, "ChargeBar") as ProgressBar
+		var charge_label = _find_child_recursive(row, "ChargeLabel") as Label
+		var hp_bar = _find_child_recursive(row, "HPBar") as ProgressBar
+		var hp_label = _find_child_recursive(row, "HPLabel") as Label
+		var mp_bar = _find_child_recursive(row, "MPBar") as ProgressBar
+		var mp_label = _find_child_recursive(row, "MPLabel") as Label
+		var name_label = _find_child_recursive(row, "NameLabel") as Label
+
 		# Update charge bar
-		var charge_bar = row.get_node("ChargeBar") as ProgressBar
-		var charge_label = row.get_node("ChargeLabel") as Label
 		if charge_bar:
 			charge_bar.value = character.get_charge_progress()
 			if character.state == PlayerCharacter.State.ACTING:
@@ -110,28 +124,32 @@ func _process(_delta: float) -> void:
 			charge_label.text = character.get_charge_text()
 
 		# Update HP
-		var hp_bar = row.get_node("HPBar") as ProgressBar
-		var hp_label = row.get_node("HPLabel") as Label
 		if hp_bar:
 			hp_bar.value = character.stats.current_hp
 		if hp_label:
-			hp_label.text = "HP: %d/%d" % [character.stats.current_hp, character.stats.max_hp]
+			hp_label.text = "%d/%d" % [character.stats.current_hp, character.stats.max_hp]
 
 		# Update MP
-		var mp_bar = row.get_node("MPBar") as ProgressBar
-		var mp_label = row.get_node("MPLabel") as Label
 		if mp_bar:
 			mp_bar.value = character.stats.current_mp
 		if mp_label:
-			mp_label.text = "MP: %d/%d" % [character.stats.current_mp, character.stats.max_mp]
+			mp_label.text = "%d/%d" % [character.stats.current_mp, character.stats.max_mp]
 
 		# Highlight leader
-		var name_label = row.get_node("NameLabel") as Label
 		if name_label:
 			if character.is_leader:
 				name_label.add_theme_color_override("font_color", Color.CYAN)
 			else:
 				name_label.add_theme_color_override("font_color", Color.WHITE)
+
+func _find_child_recursive(node: Node, child_name: String) -> Node:
+	if node.name == child_name:
+		return node
+	for child in node.get_children():
+		var found = _find_child_recursive(child, child_name)
+		if found:
+			return found
+	return null
 
 func _on_character_hp_changed(_character: PlayerCharacter) -> void:
 	pass  # Updated in _process

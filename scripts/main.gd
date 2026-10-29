@@ -173,8 +173,8 @@ func _build_ui() -> void:
 	# Character info (bottom right)
 	character_info = CharacterInfoPanel.new()
 	character_info.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	character_info.position = Vector2(-220, -200)
-	character_info.custom_minimum_size = Vector2(200, 180)
+	character_info.position = Vector2(-420, -100)
+	character_info.custom_minimum_size = Vector2(400, 80)
 	canvas.add_child(character_info)
 	character_info.setup(party)
 
