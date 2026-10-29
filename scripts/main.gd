@@ -44,12 +44,14 @@ func _ready() -> void:
 
 func _build_arena() -> void:
 	arena = Arena.new()
+	arena.process_mode = Node.PROCESS_MODE_PAUSABLE
 	arena.portal_entered.connect(_on_portal_entered)
 	add_child(arena)
 
 func _build_party() -> void:
 	for i in range(3):
 		var character = _create_player_character(party_names[i], party_colors[i])
+		character.process_mode = Node.PROCESS_MODE_PAUSABLE
 		character.position = Vector3(i * 2.0 - 2.0, 0.5, 5.0)
 		character.formation_offset = formation_offsets[i]
 		character.died.connect(_on_character_died)
@@ -142,6 +144,7 @@ func _add_hp_bar(entity: CharacterBody3D, color: Color) -> void:
 
 func _build_camera() -> void:
 	camera_controller = CameraController.new()
+	camera_controller.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 	var spring_arm = SpringArm3D.new()
 	spring_arm.name = "SpringArm3D"
@@ -217,6 +220,7 @@ func _spawn_enemies() -> void:
 
 	for i in range(enemy_count):
 		var enemy = _create_enemy(i)
+		enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 		# Spread enemies around the arena
 		var angle = (TAU / enemy_count) * i + PI  # Start from north
 		var radius = arena.arena_size * 0.3
