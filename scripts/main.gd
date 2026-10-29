@@ -33,6 +33,8 @@ var formation_offsets = [
 ]
 
 func _ready() -> void:
+	# Keep processing input while tree is paused
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_arena()
 	_build_party()
 	_build_camera()
@@ -158,6 +160,7 @@ func _build_camera() -> void:
 func _build_ui() -> void:
 	var canvas = CanvasLayer.new()
 	canvas.name = "UI"
+	canvas.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(canvas)
 
 	# Command menu (bottom left)
@@ -274,6 +277,8 @@ func _create_enemy(index: int) -> Enemy:
 	return enemy
 
 func _process(delta: float) -> void:
+	if get_tree().paused:
+		return
 	_handle_leader_movement()
 	_handle_follower_formation(delta)
 	_handle_auto_attacks(delta)
@@ -292,27 +297,31 @@ func _input(event: InputEvent) -> void:
 		GameState.LEADER_SELECT:
 			_handle_leader_select_input(event)
 
+func _set_game_state(new_state: GameState) -> void:
+	game_state = new_state
+	get_tree().paused = (game_state == GameState.COMMAND_MENU)
+
 func _handle_normal_input(event: InputEvent) -> void:
 	if event.is_action_pressed("action_confirm"):
 		var leader = party[party_leader_index]
 		if leader.state == PlayerCharacter.State.IDLE:
-			game_state = GameState.COMMAND_MENU
+			_set_game_state(GameState.COMMAND_MENU)
 			command_menu.open_menu()
 	elif event.is_action_pressed("enemy_select_next") or event.is_action_pressed("enemy_select_prev"):
 		# Enter enemy selection mode
 		var alive_enemies = _get_alive_enemies()
 		if not alive_enemies.is_empty():
-			game_state = GameState.TARGET_SELECT
+			_set_game_state(GameState.TARGET_SELECT)
 			selected_enemy_index = 0
 			_show_enemy_info(alive_enemies[0])
 	elif event.is_action_pressed("leader_switch_next") or event.is_action_pressed("leader_switch_prev"):
-		game_state = GameState.LEADER_SELECT
+		_set_game_state(GameState.LEADER_SELECT)
 		selected_leader_index = party_leader_index
 
 func _handle_target_select_input(event: InputEvent) -> void:
 	var alive_enemies = _get_alive_enemies()
 	if alive_enemies.is_empty():
-		game_state = GameState.NORMAL
+		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
 		return
 
@@ -327,11 +336,11 @@ func _handle_target_select_input(event: InputEvent) -> void:
 		var leader = party[party_leader_index]
 		var target = alive_enemies[selected_enemy_index]
 		leader.start_charge("attack", target, 1.5)
-		game_state = GameState.NORMAL
+		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
 		selection_cursor.visible = false
 	elif event.is_action_pressed("action_cancel"):
-		game_state = GameState.NORMAL
+		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
 		selection_cursor.visible = false
 
@@ -342,10 +351,10 @@ func _handle_leader_select_input(event: InputEvent) -> void:
 		selected_leader_index = (selected_leader_index - 1 + party.size()) % party.size()
 	elif event.is_action_pressed("action_confirm"):
 		_switch_leader(selected_leader_index)
-		game_state = GameState.NORMAL
+		_set_game_state(GameState.NORMAL)
 		selection_cursor.visible = false
 	elif event.is_action_pressed("action_cancel"):
-		game_state = GameState.NORMAL
+		_set_game_state(GameState.NORMAL)
 		selection_cursor.visible = false
 
 func _handle_leader_movement() -> void:
@@ -447,14 +456,14 @@ func _on_action_selected(action: String) -> void:
 	if action == "attack":
 		var alive_enemies = _get_alive_enemies()
 		if not alive_enemies.is_empty():
-			game_state = GameState.TARGET_SELECT
+			_set_game_state(GameState.TARGET_SELECT)
 			selected_enemy_index = 0
 			_show_enemy_info(alive_enemies[0])
 		else:
-			game_state = GameState.NORMAL
+			_set_game_state(GameState.NORMAL)
 
 func _on_menu_cancelled() -> void:
-	game_state = GameState.NORMAL
+	_set_game_state(GameState.NORMAL)
 
 func _on_enemy_died(enemy: Enemy) -> void:
 	# Check if all enemies are dead
