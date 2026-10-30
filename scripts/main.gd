@@ -1,7 +1,7 @@
 class_name GameManager
 extends Node3D
 
-enum GameState { NORMAL, COMMAND_MENU, TARGET_SELECT, LEADER_SELECT }
+enum GameState { NORMAL, COMMAND_MENU, TARGET_SELECT, LEADER_SELECT, PARTY_TARGET_SELECT }
 
 var game_state: GameState = GameState.NORMAL
 var current_level: int = 1
@@ -19,7 +19,15 @@ var enemy_info: EnemyInfoPanel
 # Target selection
 var selected_enemy_index: int = 0
 var selected_leader_index: int = 0
+var selected_party_index: int = 0
 var selection_cursor: MeshInstance3D
+
+# Item inventory
+var items: Dictionary = {
+	"potion": {"name": "Potion", "count": 3, "max": 3, "heal_pct": 0.25},
+	"hi_potion": {"name": "Hi-Potion", "count": 1, "max": 1, "heal_pct": 0.50},
+}
+var pending_item_id: String = ""
 
 # Party colors
 var party_colors = [Color(0.2, 0.5, 1.0), Color(1.0, 0.3, 0.3), Color(0.3, 1.0, 0.3)]
@@ -158,6 +166,7 @@ func _build_ui() -> void:
 	command_menu.position = Vector2(20, -120)
 	command_menu.custom_minimum_size = Vector2(200, 100)
 	command_menu.action_selected.connect(_on_action_selected)
+	command_menu.item_selected.connect(_on_item_selected)
 	command_menu.menu_cancelled.connect(_on_menu_cancelled)
 	canvas.add_child(command_menu)
 	command_menu.setup()
@@ -293,6 +302,8 @@ func _input(event: InputEvent) -> void:
 			_handle_target_select_input(event)
 		GameState.LEADER_SELECT:
 			_handle_leader_select_input(event)
+		GameState.PARTY_TARGET_SELECT:
+			_handle_party_target_select_input(event)
 
 func _set_game_state(new_state: GameState) -> void:
 	game_state = new_state
@@ -360,6 +371,44 @@ func _handle_leader_select_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("action_cancel"):
 		_set_game_state(GameState.NORMAL)
 		selection_cursor.visible = false
+
+func _handle_party_target_select_input(event: InputEvent) -> void:
+	if event.is_action_pressed("move_up") or event.is_action_pressed("leader_switch_next"):
+		selected_party_index = (selected_party_index - 1 + party.size()) % party.size()
+	elif event.is_action_pressed("move_down") or event.is_action_pressed("leader_switch_prev"):
+		selected_party_index = (selected_party_index + 1) % party.size()
+	elif event.is_action_pressed("action_confirm"):
+		_use_item_on_party_member(selected_party_index)
+	elif event.is_action_pressed("action_cancel"):
+		command_menu.close_menu()
+		_set_game_state(GameState.NORMAL)
+		selection_cursor.visible = false
+		pending_item_id = ""
+
+func _use_item_on_party_member(index: int) -> void:
+	if index < 0 or index >= party.size():
+		return
+	var target = party[index]
+	if not is_instance_valid(target) or target.state == PlayerCharacter.State.DEAD:
+		return
+	if pending_item_id.is_empty():
+		return
+
+	var item = items[pending_item_id]
+	if item["count"] <= 0:
+		return
+
+	# Deduct item
+	item["count"] -= 1
+
+	# Start charge on the leader with the item action
+	var leader = party[party_leader_index]
+	leader.start_charge("item:" + pending_item_id, target, 0.75)
+
+	command_menu.close_menu()
+	_set_game_state(GameState.NORMAL)
+	selection_cursor.visible = false
+	pending_item_id = ""
 
 func _handle_leader_movement() -> void:
 	if game_state != GameState.NORMAL:
@@ -439,6 +488,12 @@ func _update_selection_cursor() -> void:
 				if is_instance_valid(target):
 					selection_cursor.visible = true
 					selection_cursor.global_position = target.global_position + Vector3(0, 0.1, 0)
+		GameState.PARTY_TARGET_SELECT:
+			if selected_party_index < party.size():
+				var target = party[selected_party_index]
+				if is_instance_valid(target):
+					selection_cursor.visible = true
+					selection_cursor.global_position = target.global_position + Vector3(0, 0.1, 0)
 		_:
 			selection_cursor.visible = false
 
@@ -471,12 +526,26 @@ func _on_action_selected(action: String) -> void:
 		else:
 			command_menu.close_menu()
 			_set_game_state(GameState.NORMAL)
+	elif action == "item":
+		var item_list: Array[Dictionary] = []
+		for key in items:
+			item_list.append({"id": key, "name": items[key]["name"], "count": items[key]["count"]})
+		command_menu.open_submenu(item_list)
+
+func _on_item_selected(item_id: String) -> void:
+	pending_item_id = item_id
+	command_menu.lock_selection()
+	_set_game_state(GameState.PARTY_TARGET_SELECT)
+	selected_party_index = 0
 
 func _on_menu_cancelled() -> void:
 	_set_game_state(GameState.NORMAL)
 
 func _on_character_charge_started(character: PlayerCharacter, target: Node3D) -> void:
-	_spawn_arc(character, target, Color(0.3, 0.6, 1.0))
+	if character.charge_action.begins_with("item:"):
+		_spawn_arc(character, target, Color(0.2, 1.0, 0.3))
+	else:
+		_spawn_arc(character, target, Color(0.3, 0.6, 1.0))
 
 func _on_enemy_charge_started(enemy: Enemy, target: Node3D) -> void:
 	_spawn_arc(enemy, target, Color(1.0, 0.6, 0.0))
@@ -532,6 +601,10 @@ func _advance_level() -> void:
 	for member in party:
 		if is_instance_valid(member) and member.state != PlayerCharacter.State.DEAD:
 			member.stats.heal(member.stats.max_hp / 4)
+
+	# Replenish items
+	for key in items:
+		items[key]["count"] = items[key]["max"]
 
 	# Spawn new enemies
 	_spawn_enemies()

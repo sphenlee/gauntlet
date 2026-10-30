@@ -152,6 +152,18 @@ func _execute_action() -> void:
 		var damage = _calculate_damage()
 		if charge_target.has_method("take_hit"):
 			charge_target.take_hit(damage)
+	elif charge_action.begins_with("item:") and charge_target and is_instance_valid(charge_target):
+		var item_id = charge_action.trim_prefix("item:")
+		var heal_pct = 0.0
+		match item_id:
+			"potion":
+				heal_pct = 0.25
+			"hi_potion":
+				heal_pct = 0.50
+		if heal_pct > 0.0 and charge_target is PlayerCharacter:
+			var heal_amount = int(charge_target.stats.max_hp * heal_pct)
+			charge_target.stats.heal(heal_amount)
+			charge_target.hp_changed.emit(charge_target)
 
 	charge_action = ""
 	charge_target = null
@@ -190,10 +202,13 @@ func get_charge_progress() -> float:
 	return 0.0
 
 func get_charge_text() -> String:
+	var display = charge_action
+	if display.begins_with("item:"):
+		display = display.trim_prefix("item:").replace("_", " ").capitalize()
 	if state == State.CHARGING:
-		return charge_action.capitalize() + "..."
+		return display.capitalize() + "..."
 	elif state == State.ACTING:
-		return charge_action.capitalize() + "!"
+		return display.capitalize() + "!"
 	return ""
 
 func apply_leader_input(input_dir: Vector2, cam_basis: Basis) -> void:
