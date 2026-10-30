@@ -8,7 +8,7 @@ extends Node3D
 @export var camera_angle_min: float = -50.0
 @export var camera_angle_max: float = -15.0
 @export var orbit_speed: float = 2.5
-@export var drag_speed: float = 3.0
+@export var drag_speed: float = 1.0
 
 var orbit_yaw: float = 0.0
 var orbit_pitch: float = -30.0
