@@ -108,40 +108,24 @@ func _create_player_character(char_name: String, color: Color) -> PlayerCharacte
 	return character
 
 func _add_hp_bar(entity: CharacterBody3D, color: Color) -> void:
-	var bar_root = Node3D.new()
-	bar_root.name = "HPBar"
-	bar_root.position.y = 2.2
+	var bar = MeshInstance3D.new()
+	bar.name = "HPBar"
+	bar.position.y = 2.2
+	bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	# Background quad
-	var bg = MeshInstance3D.new()
-	bg.name = "Background"
-	var bg_quad = QuadMesh.new()
-	bg_quad.size = Vector2(1.2, 0.12)
-	bg.mesh = bg_quad
-	var bg_mat = StandardMaterial3D.new()
-	bg_mat.albedo_color = Color(0.1, 0.1, 0.1, 0.8)
-	bg_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	bg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	bg_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	bg.set_surface_override_material(0, bg_mat)
-	bar_root.add_child(bg)
+	var quad = QuadMesh.new()
+	quad.size = Vector2(1.2, 0.12)
+	bar.mesh = quad
 
-	# Fill quad
-	var fill = MeshInstance3D.new()
-	fill.name = "Fill"
-	var fill_quad = QuadMesh.new()
-	fill_quad.size = Vector2(1.2, 0.12)
-	fill.mesh = fill_quad
-	var fill_mat = StandardMaterial3D.new()
-	fill_mat.albedo_color = color
-	fill_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	fill_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	fill.set_surface_override_material(0, fill_mat)
-	# Offset slightly forward so it renders on top of background
-	fill.position.z = -0.001
-	bar_root.add_child(fill)
+	var shader_mat = ShaderMaterial.new()
+	var shader = load("res://shaders/hp_bar.gdshader") as Shader
+	shader_mat.shader = shader
+	shader_mat.set_shader_parameter("fill_color", color)
+	shader_mat.set_shader_parameter("bg_color", Color(0.1, 0.1, 0.1, 0.8))
+	shader_mat.set_shader_parameter("fill_ratio", 1.0)
+	bar.set_surface_override_material(0, shader_mat)
 
-	entity.add_child(bar_root)
+	entity.add_child(bar)
 
 func _build_camera() -> void:
 	camera_controller = CameraController.new()
@@ -196,6 +180,7 @@ func _build_ui() -> void:
 
 func _build_selection_cursor() -> void:
 	selection_cursor = MeshInstance3D.new()
+	selection_cursor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var torus = TorusMesh.new()
 	torus.inner_radius = 0.6
 	torus.outer_radius = 0.8
@@ -284,13 +269,13 @@ func _create_enemy(index: int) -> Enemy:
 	return enemy
 
 func _process(delta: float) -> void:
+	_update_selection_cursor()
 	if get_tree().paused:
 		return
 	_handle_leader_movement()
 	_handle_follower_formation(delta)
 	_handle_auto_attacks(delta)
 	_update_camera_state()
-	_update_selection_cursor()
 
 func _input(event: InputEvent) -> void:
 	match game_state:
@@ -493,6 +478,7 @@ func _spawn_arc(from_node: Node3D, to_node: Node3D, color: Color) -> void:
 		return
 	var arc = TargetArc.new()
 	arc.process_mode = Node.PROCESS_MODE_PAUSABLE
+	arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Use world-space positions, arc is added to the scene root
 	var from_pos = from_node.global_position + Vector3(0, 1.0, 0)
 	var to_pos = to_node.global_position + Vector3(0, 1.0, 0)

@@ -32,19 +32,17 @@ var auto_attack_delay: float = 2.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var mesh: MeshInstance3D
 var collision: CollisionShape3D
-var hp_bar_fill: MeshInstance3D
+var hp_bar: MeshInstance3D
 
 func _ready() -> void:
 	# Find child nodes created programmatically
 	for child in get_children():
-		if child is MeshInstance3D:
+		if child is MeshInstance3D and child.name != "HPBar":
 			mesh = child
 		elif child is CollisionShape3D:
 			collision = child
 		elif child.name == "HPBar":
-			for sub in child.get_children():
-				if sub.name == "Fill":
-					hp_bar_fill = sub
+			hp_bar = child
 
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
@@ -66,11 +64,11 @@ func _physics_process(delta: float) -> void:
 	_update_hp_bar()
 
 func _update_hp_bar() -> void:
-	if hp_bar_fill and stats:
+	if hp_bar and stats:
 		var ratio = clampf(float(stats.current_hp) / float(stats.max_hp), 0.0, 1.0)
-		hp_bar_fill.scale.x = ratio
-		# Shift left so bar drains from right
-		hp_bar_fill.position.x = -(1.0 - ratio) * 0.6
+		var mat = hp_bar.get_surface_override_material(0) as ShaderMaterial
+		if mat:
+			mat.set_shader_parameter("fill_ratio", ratio)
 
 func _handle_idle(_delta: float) -> void:
 	if is_leader:
