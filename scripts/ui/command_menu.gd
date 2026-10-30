@@ -24,7 +24,8 @@ func setup() -> void:
 
 func _build_menu() -> void:
 	for child in list.get_children():
-		child.queue_free()
+		list.remove_child(child)
+		child.free()
 
 	if in_submenu:
 		_build_submenu()
