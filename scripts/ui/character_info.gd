@@ -4,6 +4,7 @@ extends PanelContainer
 var party: Array[PlayerCharacter] = []
 var rows: Array[HBoxContainer] = []
 var container: VBoxContainer
+var selected_index: int = -1  # -1 = no selection
 
 func setup(p_party: Array[PlayerCharacter]) -> void:
 	container = VBoxContainer.new()
@@ -135,12 +136,17 @@ func _process(_delta: float) -> void:
 		if mp_label:
 			mp_label.text = "%d/%d" % [character.stats.current_mp, character.stats.max_mp]
 
-		# Highlight leader
+		# Highlight leader and selection
 		if name_label:
-			if character.is_leader:
+			var prefix = ""
+			if i == selected_index:
+				prefix = "> "
+				name_label.add_theme_color_override("font_color", Color.YELLOW)
+			elif character.is_leader:
 				name_label.add_theme_color_override("font_color", Color.CYAN)
 			else:
 				name_label.add_theme_color_override("font_color", Color.WHITE)
+			name_label.text = prefix + character.stats.character_name
 
 func _find_child_recursive(node: Node, child_name: String) -> Node:
 	if node.name == child_name:

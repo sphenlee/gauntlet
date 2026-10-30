@@ -375,14 +375,17 @@ func _handle_leader_select_input(event: InputEvent) -> void:
 func _handle_party_target_select_input(event: InputEvent) -> void:
 	if event.is_action_pressed("move_up") or event.is_action_pressed("leader_switch_next"):
 		selected_party_index = (selected_party_index - 1 + party.size()) % party.size()
+		character_info.selected_index = selected_party_index
 	elif event.is_action_pressed("move_down") or event.is_action_pressed("leader_switch_prev"):
 		selected_party_index = (selected_party_index + 1) % party.size()
+		character_info.selected_index = selected_party_index
 	elif event.is_action_pressed("action_confirm"):
 		_use_item_on_party_member(selected_party_index)
 	elif event.is_action_pressed("action_cancel"):
 		command_menu.close_menu()
 		_set_game_state(GameState.NORMAL)
 		selection_cursor.visible = false
+		character_info.selected_index = -1
 		pending_item_id = ""
 
 func _use_item_on_party_member(index: int) -> void:
@@ -408,6 +411,7 @@ func _use_item_on_party_member(index: int) -> void:
 	command_menu.close_menu()
 	_set_game_state(GameState.NORMAL)
 	selection_cursor.visible = false
+	character_info.selected_index = -1
 	pending_item_id = ""
 
 func _handle_leader_movement() -> void:
@@ -537,6 +541,7 @@ func _on_item_selected(item_id: String) -> void:
 	command_menu.lock_selection()
 	_set_game_state(GameState.PARTY_TARGET_SELECT)
 	selected_party_index = 0
+	character_info.selected_index = selected_party_index
 
 func _on_menu_cancelled() -> void:
 	_set_game_state(GameState.NORMAL)
