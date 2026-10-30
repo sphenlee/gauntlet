@@ -15,6 +15,11 @@ var enemies: Array[Enemy] = []
 var command_menu: CommandMenu
 var character_info: CharacterInfoPanel
 var enemy_info: EnemyInfoPanel
+var level_label: Label
+var game_over_label: Label
+var game_over_timer: float = 0.0
+var game_over_delay: float = 3.0
+var is_game_over: bool = false
 
 # Target selection
 var selected_enemy_index: int = 0
@@ -189,6 +194,30 @@ func _build_ui() -> void:
 	canvas.add_child(enemy_info)
 	enemy_info.setup()
 
+	# Level display (top right)
+	level_label = Label.new()
+	level_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	level_label.position = Vector2(-120, 20)
+	level_label.add_theme_font_size_override("font_size", 24)
+	level_label.add_theme_color_override("font_color", Color.WHITE)
+	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	level_label.add_theme_constant_override("shadow_offset_x", 1)
+	level_label.add_theme_constant_override("shadow_offset_y", 1)
+	canvas.add_child(level_label)
+	_update_level_display()
+
+	# Game Over label (center)
+	game_over_label = Label.new()
+	game_over_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	game_over_label.add_theme_font_size_override("font_size", 64)
+	game_over_label.add_theme_color_override("font_color", Color.RED)
+	game_over_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	game_over_label.add_theme_constant_override("shadow_offset_x", 2)
+	game_over_label.add_theme_constant_override("shadow_offset_y", 2)
+	game_over_label.text = "GAME OVER"
+	game_over_label.visible = false
+	canvas.add_child(game_over_label)
+
 func _build_selection_cursor() -> void:
 	selection_cursor = MeshInstance3D.new()
 	selection_cursor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -282,6 +311,14 @@ func _create_enemy(index: int) -> Enemy:
 
 func _process(delta: float) -> void:
 	_update_selection_cursor()
+
+	# Game over countdown
+	if is_game_over:
+		game_over_timer -= delta
+		if game_over_timer <= 0:
+			_finish_game_over()
+		return
+
 	if get_tree().paused:
 		return
 	_handle_leader_movement()
@@ -290,6 +327,9 @@ func _process(delta: float) -> void:
 	_update_camera_state()
 
 func _input(event: InputEvent) -> void:
+	if is_game_over:
+		return
+
 	# Escape quits from normal mode; in menus it cancels (handled by state handlers)
 	if event.is_action_pressed("action_cancel") and game_state == GameState.NORMAL:
 		get_tree().quit()
@@ -611,6 +651,7 @@ func _on_character_died(character: PlayerCharacter) -> void:
 
 func _on_portal_entered() -> void:
 	current_level += 1
+	_update_level_display()
 	_advance_level()
 
 func _advance_level() -> void:
@@ -635,9 +676,22 @@ func _advance_level() -> void:
 	# Reset camera
 	camera_controller.snap_to_target()
 
+func _update_level_display() -> void:
+	if level_label:
+		level_label.text = "Level %d" % current_level
+
 func _game_over() -> void:
-	# Simple game over - restart level
+	if is_game_over:
+		return
+	is_game_over = true
+	game_over_label.visible = true
+	game_over_timer = game_over_delay
+
+func _finish_game_over() -> void:
+	is_game_over = false
+	game_over_label.visible = false
 	current_level = 1
+	_update_level_display()
 	for i in range(party.size()):
 		if is_instance_valid(party[i]):
 			party[i].stats.current_hp = party[i].stats.max_hp
@@ -645,5 +699,9 @@ func _game_over() -> void:
 			party[i].state = PlayerCharacter.State.IDLE
 			party[i].rotation_degrees.z = 0
 			party[i].position = Vector3(i * 2.0 - 2.0, 0.5, 5.0)
+			party[i].last_attack_target = null
+	# Replenish items
+	for key in items:
+		items[key]["count"] = items[key]["max"]
 	_spawn_enemies()
 	camera_controller.snap_to_target()
