@@ -73,8 +73,8 @@ func handle_input(event: InputEvent) -> bool:
 		action_selected.emit(actions[selected_index].to_lower())
 		return true
 	elif event.is_action_pressed("action_cancel"):
-		menu_cancelled.emit()
 		close_menu()
+		menu_cancelled.emit()
 		return true
 
 	return false

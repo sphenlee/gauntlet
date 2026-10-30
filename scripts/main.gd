@@ -302,7 +302,10 @@ func _set_game_state(new_state: GameState) -> void:
 func _handle_normal_input(event: InputEvent) -> void:
 	if event.is_action_pressed("action_confirm"):
 		var leader = party[party_leader_index]
-		if leader.state == PlayerCharacter.State.IDLE:
+		if is_instance_valid(leader) and leader.state != PlayerCharacter.State.DEAD:
+			# Cancel any in-progress charge and prevent auto-repeat
+			leader.cancel_charge()
+			leader.last_attack_target = null
 			command_menu.open_menu()
 			_set_game_state(GameState.COMMAND_MENU)
 	elif event.is_action_pressed("enemy_select_next") or event.is_action_pressed("enemy_select_prev"):
