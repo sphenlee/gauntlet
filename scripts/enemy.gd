@@ -3,6 +3,7 @@ extends CharacterBody3D
 
 signal hp_changed(enemy: Enemy)
 signal died(enemy: Enemy)
+signal charge_started(enemy: Enemy, target: Node3D)
 
 enum State { IDLE, CHARGING, ACTING, DEAD }
 
@@ -112,6 +113,7 @@ func _pick_target_and_attack() -> void:
 	charge_duration = randf_range(charge_duration_min, charge_duration_max)
 	charge_time = 0.0
 	state = State.CHARGING
+	charge_started.emit(self, charge_target)
 
 func _execute_attack() -> void:
 	state = State.ACTING

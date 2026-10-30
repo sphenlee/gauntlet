@@ -55,6 +55,7 @@ func _build_party() -> void:
 		character.position = Vector3(i * 2.0 - 2.0, 0.5, 5.0)
 		character.formation_offset = formation_offsets[i]
 		character.died.connect(_on_character_died)
+		character.charge_started.connect(_on_character_charge_started)
 		party.append(character)
 		add_child(character)
 
@@ -228,6 +229,7 @@ func _spawn_enemies() -> void:
 		enemy.position = Vector3(cos(angle) * radius, 0.5, sin(angle) * radius - 3.0)
 		enemy.party_members = party
 		enemy.died.connect(_on_enemy_died)
+		enemy.charge_started.connect(_on_enemy_charge_started)
 		enemies.append(enemy)
 		add_child(enemy)
 
@@ -479,6 +481,23 @@ func _on_action_selected(action: String) -> void:
 
 func _on_menu_cancelled() -> void:
 	_set_game_state(GameState.NORMAL)
+
+func _on_character_charge_started(character: PlayerCharacter, target: Node3D) -> void:
+	_spawn_arc(character, target, Color(0.3, 0.6, 1.0))
+
+func _on_enemy_charge_started(enemy: Enemy, target: Node3D) -> void:
+	_spawn_arc(enemy, target, Color(1.0, 0.6, 0.0))
+
+func _spawn_arc(from_node: Node3D, to_node: Node3D, color: Color) -> void:
+	if not is_instance_valid(from_node) or not is_instance_valid(to_node):
+		return
+	var arc = TargetArc.new()
+	arc.process_mode = Node.PROCESS_MODE_PAUSABLE
+	# Use world-space positions, arc is added to the scene root
+	var from_pos = from_node.global_position + Vector3(0, 1.0, 0)
+	var to_pos = to_node.global_position + Vector3(0, 1.0, 0)
+	add_child(arc)
+	arc.setup(from_pos, to_pos, color)
 
 func _on_enemy_died(enemy: Enemy) -> void:
 	# Check if all enemies are dead

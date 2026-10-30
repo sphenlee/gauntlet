@@ -4,6 +4,7 @@ extends CharacterBody3D
 signal hp_changed(character: PlayerCharacter)
 signal charge_changed(character: PlayerCharacter)
 signal died(character: PlayerCharacter)
+signal charge_started(character: PlayerCharacter, target: Node3D)
 
 enum State { IDLE, CHARGING, ACTING, DEAD }
 
@@ -18,6 +19,8 @@ var charge_action: String = ""
 var charge_target: Node3D = null
 var acting_timer: float = 0.0
 var acting_duration: float = 0.5
+var last_attack_target: Node3D = null
+var last_charge_duration: float = 1.5
 
 # Formation offset for followers
 var formation_offset: Vector3 = Vector3.ZERO
@@ -104,6 +107,21 @@ func _handle_acting(delta: float) -> void:
 	if acting_timer >= acting_duration:
 		state = State.IDLE
 		charge_changed.emit(self)
+		_try_auto_repeat_attack()
+
+func _try_auto_repeat_attack() -> void:
+	if not last_attack_target or not is_instance_valid(last_attack_target):
+		last_attack_target = null
+		return
+	# Check if target is still alive
+	if last_attack_target.has_method("is_alive") and not last_attack_target.is_alive():
+		last_attack_target = null
+		return
+	if last_attack_target is Enemy and last_attack_target.state == Enemy.State.DEAD:
+		last_attack_target = null
+		return
+	# Auto-repeat attack on same target
+	start_charge("attack", last_attack_target, last_charge_duration)
 
 func start_charge(action: String, target: Node3D, duration: float) -> void:
 	if state == State.DEAD:
@@ -115,6 +133,7 @@ func start_charge(action: String, target: Node3D, duration: float) -> void:
 	charge_duration = duration
 	charge_time = 0.0
 	charge_changed.emit(self)
+	charge_started.emit(self, target)
 
 func cancel_charge() -> void:
 	if state == State.CHARGING:
@@ -122,6 +141,7 @@ func cancel_charge() -> void:
 		charge_action = ""
 		charge_target = null
 		charge_time = 0.0
+		last_attack_target = null
 		charge_changed.emit(self)
 
 func _execute_action() -> void:
@@ -129,6 +149,8 @@ func _execute_action() -> void:
 	acting_timer = 0.0
 
 	if charge_action == "attack" and charge_target and is_instance_valid(charge_target):
+		last_attack_target = charge_target
+		last_charge_duration = charge_duration
 		var damage = _calculate_damage()
 		if charge_target.has_method("take_hit"):
 			charge_target.take_hit(damage)
@@ -155,6 +177,7 @@ func take_hit(damage: int) -> void:
 
 func _die() -> void:
 	state = State.DEAD
+	last_attack_target = null
 	died.emit(self)
 	# Fall over
 	var tween = create_tween()
