@@ -150,6 +150,7 @@ func _build_camera() -> void:
 	spring_arm.name = "SpringArm3D"
 	spring_arm.spring_length = 8.0
 	spring_arm.collision_mask = 1
+	spring_arm.margin = 0.5
 	camera_controller.add_child(spring_arm)
 
 	var camera = Camera3D.new()
@@ -376,6 +377,10 @@ func _handle_leader_movement() -> void:
 	var cam_basis = camera_controller.get_camera_basis()
 	leader.apply_leader_input(input_dir, cam_basis)
 	camera_controller.is_player_moving = input_dir.length() > 0.1
+	if input_dir.length() > 0.1:
+		var move_dir = (cam_basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+		move_dir.y = 0
+		camera_controller.player_move_direction = move_dir
 
 func _handle_follower_formation(delta: float) -> void:
 	var leader = party[party_leader_index]
