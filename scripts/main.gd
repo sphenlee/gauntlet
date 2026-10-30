@@ -278,6 +278,11 @@ func _process(delta: float) -> void:
 	_update_camera_state()
 
 func _input(event: InputEvent) -> void:
+	# Escape quits from normal mode; in menus it cancels (handled by state handlers)
+	if event.is_action_pressed("action_cancel") and game_state == GameState.NORMAL:
+		get_tree().quit()
+		return
+
 	match game_state:
 		GameState.NORMAL:
 			_handle_normal_input(event)

@@ -1,18 +1,18 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled, shadows_disabled, skip_vertex_transform;
+render_mode unshaded, cull_disabled, shadows_disabled;
 
 uniform float fill_ratio : hint_range(0.0, 1.0) = 1.0;
 uniform vec4 fill_color : source_color = vec4(0.2, 0.5, 1.0, 1.0);
 uniform vec4 bg_color : source_color = vec4(0.1, 0.1, 0.1, 0.8);
 
 void vertex() {
-	// Billboard: extract camera right and up from view matrix
-	vec3 right = vec3(INV_VIEW_MATRIX[0][0], INV_VIEW_MATRIX[1][0], INV_VIEW_MATRIX[2][0]);
-	vec3 up = vec3(INV_VIEW_MATRIX[0][1], INV_VIEW_MATRIX[1][1], INV_VIEW_MATRIX[2][1]);
-
-	vec3 world_pos = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	vec3 offset = right * VERTEX.x + up * VERTEX.y;
-	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(world_pos + offset, 1.0);
+	// Spherical billboard: make the quad always face the camera
+	mat4 n_out2p0 = MODELVIEW_MATRIX;
+	n_out2p0[0] = vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0);
+	n_out2p0[1] = vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0);
+	n_out2p0[2] = vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0);
+	// Keep the translation from the original modelview matrix
+	MODELVIEW_MATRIX = n_out2p0;
 }
 
 void fragment() {
@@ -24,3 +24,4 @@ void fragment() {
 		ALPHA = bg_color.a;
 	}
 }
+
