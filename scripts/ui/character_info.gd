@@ -2,7 +2,7 @@ class_name CharacterInfoPanel
 extends PanelContainer
 
 var party: Array[PlayerCharacter] = []
-var rows: Array[HBoxContainer] = []
+var rows: Array[PanelContainer] = []
 var container: VBoxContainer
 var selected_index: int = -1  # -1 = no selection
 
@@ -19,6 +19,17 @@ func _build_rows() -> void:
 	rows.clear()
 
 	for character in party:
+		# Background panel for leader highlight
+		var bg = PanelContainer.new()
+		bg.name = "RowBG"
+		var bg_style = StyleBoxFlat.new()
+		bg_style.bg_color = Color(0, 0, 0, 0)  # Transparent by default
+		bg_style.corner_radius_top_left = 4
+		bg_style.corner_radius_top_right = 4
+		bg_style.corner_radius_bottom_left = 4
+		bg_style.corner_radius_bottom_right = 4
+		bg.add_theme_stylebox_override("panel", bg_style)
+
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -59,8 +70,9 @@ func _build_rows() -> void:
 		)
 		row.add_child(mp_container)
 
-		container.add_child(row)
-		rows.append(row)
+		bg.add_child(row)
+		container.add_child(bg)
+		rows.append(bg)
 
 		# Connect signals
 		character.hp_changed.connect(_on_character_hp_changed)
@@ -147,6 +159,14 @@ func _process(_delta: float) -> void:
 			else:
 				name_label.add_theme_color_override("font_color", Color.WHITE)
 			name_label.text = prefix + character.stats.character_name
+
+		# Leader background highlight
+		var bg_style = row.get_theme_stylebox("panel") as StyleBoxFlat
+		if bg_style:
+			if character.is_leader:
+				bg_style.bg_color = Color(0.2, 0.4, 0.6, 0.4)
+			else:
+				bg_style.bg_color = Color(0, 0, 0, 0)
 
 func _find_child_recursive(node: Node, child_name: String) -> Node:
 	if node.name == child_name:

@@ -1,7 +1,7 @@
 class_name GameManager
 extends Node3D
 
-enum GameState { NORMAL, COMMAND_MENU, TARGET_SELECT, LEADER_SELECT, PARTY_TARGET_SELECT }
+enum GameState { NORMAL, COMMAND_MENU, TARGET_SELECT, PARTY_TARGET_SELECT }
 
 var game_state: GameState = GameState.NORMAL
 var current_level: int = 1
@@ -23,7 +23,6 @@ var is_game_over: bool = false
 
 # Target selection
 var selected_enemy_index: int = 0
-var selected_leader_index: int = 0
 var selected_party_index: int = 0
 var selection_cursor: MeshInstance3D
 
@@ -343,8 +342,6 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		GameState.TARGET_SELECT:
 			_handle_target_select_input(event)
-		GameState.LEADER_SELECT:
-			_handle_leader_select_input(event)
 		GameState.PARTY_TARGET_SELECT:
 			_handle_party_target_select_input(event)
 
@@ -369,9 +366,10 @@ func _handle_normal_input(event: InputEvent) -> void:
 			_set_game_state(GameState.TARGET_SELECT)
 			selected_enemy_index = 0
 			_show_enemy_info(alive_enemies[0])
-	elif event.is_action_pressed("leader_switch_next") or event.is_action_pressed("leader_switch_prev"):
-		_set_game_state(GameState.LEADER_SELECT)
-		selected_leader_index = party_leader_index
+	elif event.is_action_pressed("leader_switch_next"):
+		_cycle_leader(1)
+	elif event.is_action_pressed("leader_switch_prev"):
+		_cycle_leader(-1)
 
 func _handle_target_select_input(event: InputEvent) -> void:
 	var alive_enemies = _get_alive_enemies()
@@ -400,19 +398,6 @@ func _handle_target_select_input(event: InputEvent) -> void:
 		command_menu.close_menu()
 		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
-		selection_cursor.visible = false
-
-func _handle_leader_select_input(event: InputEvent) -> void:
-	if event.is_action_pressed("leader_switch_next"):
-		selected_leader_index = (selected_leader_index + 1) % party.size()
-	elif event.is_action_pressed("leader_switch_prev"):
-		selected_leader_index = (selected_leader_index - 1 + party.size()) % party.size()
-	elif event.is_action_pressed("action_confirm"):
-		_switch_leader(selected_leader_index)
-		_set_game_state(GameState.NORMAL)
-		selection_cursor.visible = false
-	elif event.is_action_pressed("action_cancel"):
-		_set_game_state(GameState.NORMAL)
 		selection_cursor.visible = false
 
 func _handle_party_target_select_input(event: InputEvent) -> void:
@@ -529,12 +514,6 @@ func _update_selection_cursor() -> void:
 				if is_instance_valid(target):
 					selection_cursor.visible = true
 					selection_cursor.global_position = target.global_position + Vector3(0, 0.1, 0)
-		GameState.LEADER_SELECT:
-			if selected_leader_index < party.size():
-				var target = party[selected_leader_index]
-				if is_instance_valid(target):
-					selection_cursor.visible = true
-					selection_cursor.global_position = target.global_position + Vector3(0, 0.1, 0)
 		GameState.PARTY_TARGET_SELECT:
 			if selected_party_index < party.size():
 				var target = party[selected_party_index]
@@ -546,6 +525,15 @@ func _update_selection_cursor() -> void:
 
 func _show_enemy_info(enemy: Enemy) -> void:
 	enemy_info.show_enemy(enemy)
+
+func _cycle_leader(direction: int) -> void:
+	# Find next alive party member
+	var index = party_leader_index
+	for i in range(party.size()):
+		index = (index + direction + party.size()) % party.size()
+		if is_instance_valid(party[index]) and party[index].state != PlayerCharacter.State.DEAD:
+			_switch_leader(index)
+			return
 
 func _switch_leader(new_index: int) -> void:
 	if new_index == party_leader_index:
@@ -559,8 +547,8 @@ func _switch_leader(new_index: int) -> void:
 	party[party_leader_index].is_leader = false
 	party_leader_index = new_index
 	party[party_leader_index].is_leader = true
+	# Glide camera to new leader (don't snap)
 	camera_controller.follow_target = party[party_leader_index]
-	camera_controller.snap_to_target()
 
 func _on_action_selected(action: String) -> void:
 	if action == "attack":
