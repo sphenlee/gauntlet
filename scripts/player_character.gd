@@ -5,6 +5,8 @@ signal hp_changed(character: PlayerCharacter)
 signal charge_changed(character: PlayerCharacter)
 signal died(character: PlayerCharacter)
 signal charge_started(character: PlayerCharacter, target: Node3D)
+signal damage_taken(character: PlayerCharacter, amount: int)
+signal healed(character: PlayerCharacter, amount: int)
 
 enum State { IDLE, CHARGING, ACTING, DEAD }
 
@@ -164,6 +166,7 @@ func _execute_action() -> void:
 			var heal_amount = int(charge_target.stats.max_hp * heal_pct)
 			charge_target.stats.heal(heal_amount)
 			charge_target.hp_changed.emit(charge_target)
+			charge_target.healed.emit(charge_target, heal_amount)
 
 	charge_action = ""
 	charge_target = null
@@ -182,6 +185,7 @@ func take_hit(damage: int) -> void:
 	var reduced = maxi(1, damage - stats.defense)
 	stats.take_damage(reduced)
 	hp_changed.emit(self)
+	damage_taken.emit(self, reduced)
 	if not stats.is_alive():
 		_die()
 

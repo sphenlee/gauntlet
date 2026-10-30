@@ -4,6 +4,7 @@ extends CharacterBody3D
 signal hp_changed(enemy: Enemy)
 signal died(enemy: Enemy)
 signal charge_started(enemy: Enemy, target: Node3D)
+signal damage_taken(enemy: Enemy, amount: int)
 
 enum State { IDLE, CHARGING, ACTING, DEAD }
 
@@ -139,6 +140,7 @@ func take_hit(damage: int) -> void:
 	var reduced = maxi(1, damage - stats.defense)
 	stats.take_damage(reduced)
 	hp_changed.emit(self)
+	damage_taken.emit(self, reduced)
 	_flash_damage()
 	if not stats.is_alive():
 		_die()

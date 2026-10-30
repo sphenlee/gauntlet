@@ -64,6 +64,8 @@ func _build_party() -> void:
 		character.formation_offset = formation_offsets[i]
 		character.died.connect(_on_character_died)
 		character.charge_started.connect(_on_character_charge_started)
+		character.damage_taken.connect(_on_character_damage_taken)
+		character.healed.connect(_on_character_healed)
 		party.append(character)
 		add_child(character)
 
@@ -224,6 +226,7 @@ func _spawn_enemies() -> void:
 		enemy.party_members = party
 		enemy.died.connect(_on_enemy_died)
 		enemy.charge_started.connect(_on_enemy_charge_started)
+		enemy.damage_taken.connect(_on_enemy_damage_taken)
 		enemies.append(enemy)
 		add_child(enemy)
 
@@ -545,6 +548,21 @@ func _on_item_selected(item_id: String) -> void:
 
 func _on_menu_cancelled() -> void:
 	_set_game_state(GameState.NORMAL)
+
+func _on_character_damage_taken(character: PlayerCharacter, amount: int) -> void:
+	_spawn_floating_number(str(amount), Color(1.0, 0.6, 0.0), character.global_position)
+
+func _on_character_healed(character: PlayerCharacter, amount: int) -> void:
+	_spawn_floating_number("+" + str(amount), Color(0.2, 1.0, 0.3), character.global_position)
+
+func _on_enemy_damage_taken(enemy: Enemy, amount: int) -> void:
+	_spawn_floating_number(str(amount), Color(0.3, 0.6, 1.0), enemy.global_position)
+
+func _spawn_floating_number(text: String, color: Color, pos: Vector3) -> void:
+	var num = FloatingNumber.new()
+	num.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(num)
+	num.setup(text, color, pos)
 
 func _on_character_charge_started(character: PlayerCharacter, target: Node3D) -> void:
 	if character.charge_action.begins_with("item:"):
