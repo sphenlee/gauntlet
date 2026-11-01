@@ -82,6 +82,8 @@ The game should use a gamepad for input (with keyboard for backup).
 | Cancel (B) | B / Circle | Escape / Backspace |
 | Enemy select next/prev | D-pad left/right | Q/E or left/right arrows |
 | Leader switch next/prev | D-pad up/down | Up/down arrows |
+| Open main menu | X / Triangle | M |
+| Tactics: switch character | L1 / R1 | Q / E |
 | Quit game | — | Escape (from normal mode) |
 
 The camera follows the party leader with smooth exponential interpolation and a raised pivot
@@ -214,6 +216,9 @@ Each row has 3 columns:
  3. the action - selecting will open a submenu to choose an action
 
 B/Circle returns to the main menu.
+
+The tactics menu also shows the current character being edited, and the shoulder buttons
+(L1/R1 on playstation, and Q/E on keyboard) can be used to switch between characters.
 
 Tactics - Conditions
 --------------------

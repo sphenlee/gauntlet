@@ -4,13 +4,13 @@ extends PanelContainer
 signal editor_closed
 
 enum Column { TOGGLE, CONDITION, ACTION }
-enum EditorState { GRID, CONDITION_PICKER, ACTION_PICKER, CHARACTER_PICKER }
+enum EditorState { GRID, CONDITION_PICKER, ACTION_PICKER }
 
 var party: Array[PlayerCharacter] = []
 var character_index: int = 0
 var cursor_row: int = 0
 var cursor_col: Column = Column.TOGGLE
-var editor_state: EditorState = EditorState.CHARACTER_PICKER
+var editor_state: EditorState = EditorState.GRID
 var picker_index: int = 0
 
 var grid_container: VBoxContainer
@@ -73,8 +73,7 @@ func setup(p_party: Array[PlayerCharacter]) -> void:
 
 func open_editor() -> void:
 	visible = true
-	editor_state = EditorState.CHARACTER_PICKER
-	character_index = 0
+	editor_state = EditorState.GRID
 	cursor_row = 0
 	cursor_col = Column.TOGGLE
 	_refresh_display()
@@ -84,19 +83,13 @@ func close_editor() -> void:
 	editor_closed.emit()
 
 func _refresh_display() -> void:
-	if editor_state == EditorState.CHARACTER_PICKER:
-		header_label.text = "Select Character: " + party[character_index].stats.character_name
-	else:
-		header_label.text = "Tactics: " + party[character_index].stats.character_name
+	header_label.text = "Tactics: " + party[character_index].stats.character_name
 	_build_grid()
 
 func _build_grid() -> void:
 	for child in grid_container.get_children():
 		grid_container.remove_child(child)
 		child.free()
-
-	if editor_state == EditorState.CHARACTER_PICKER:
-		return
 
 	var tactics = party[character_index].tactics
 	for row_i in range(MAX_ROWS):
@@ -222,34 +215,12 @@ func _close_picker() -> void:
 
 func handle_input(event: InputEvent) -> bool:
 	match editor_state:
-		EditorState.CHARACTER_PICKER:
-			return _handle_character_picker_input(event)
 		EditorState.GRID:
 			return _handle_grid_input(event)
 		EditorState.CONDITION_PICKER:
 			return _handle_condition_picker_input(event)
 		EditorState.ACTION_PICKER:
 			return _handle_action_picker_input(event)
-	return false
-
-func _handle_character_picker_input(event: InputEvent) -> bool:
-	if event.is_action_pressed("move_up"):
-		character_index = (character_index - 1 + party.size()) % party.size()
-		_refresh_display()
-		return true
-	elif event.is_action_pressed("move_down"):
-		character_index = (character_index + 1) % party.size()
-		_refresh_display()
-		return true
-	elif event.is_action_pressed("action_confirm"):
-		editor_state = EditorState.GRID
-		cursor_row = 0
-		cursor_col = Column.TOGGLE
-		_refresh_display()
-		return true
-	elif event.is_action_pressed("action_cancel"):
-		close_editor()
-		return true
 	return false
 
 func _handle_grid_input(event: InputEvent) -> bool:
@@ -260,6 +231,14 @@ func _handle_grid_input(event: InputEvent) -> bool:
 	elif event.is_action_pressed("move_down"):
 		cursor_row = (cursor_row + 1) % MAX_ROWS
 		_update_cursor()
+		return true
+	elif event.is_action_pressed("tactics_prev_char"):
+		character_index = (character_index - 1 + party.size()) % party.size()
+		_refresh_display()
+		return true
+	elif event.is_action_pressed("tactics_next_char"):
+		character_index = (character_index + 1) % party.size()
+		_refresh_display()
 		return true
 	elif event.is_action_pressed("enemy_select_prev"):
 		cursor_col = (cursor_col - 1 + 3) % 3 as Column
@@ -290,8 +269,7 @@ func _handle_grid_input(event: InputEvent) -> bool:
 					_open_picker("Select Action", options)
 		return true
 	elif event.is_action_pressed("action_cancel"):
-		editor_state = EditorState.CHARACTER_PICKER
-		_refresh_display()
+		close_editor()
 		return true
 	return false
 
