@@ -388,8 +388,8 @@ func _input(event: InputEvent) -> void:
 	if is_game_over:
 		return
 
-	# Escape quits only from normal mode; in menus it cancels (handled by state handlers)
-	if event.is_action_pressed("action_cancel") and game_state == GameState.NORMAL:
+	# Escape quits the game (not a controller button, keyboard only)
+	if event.is_action_pressed("quit_game"):
 		get_tree().quit()
 		return
 

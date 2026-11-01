@@ -78,13 +78,13 @@ The game should use a gamepad for input (with keyboard for backup).
 |--------|---------|----------|
 | Move party leader | Left stick | WASD |
 | Camera orbit | Right stick | IJKL |
-| Confirm (A) | A / Cross | Enter / Space |
-| Cancel (B) | B / Circle | Escape / Backspace |
-| Enemy select next/prev | D-pad left/right | Q/E or left/right arrows |
+| Confirm (A) | Cross | Enter |
+| Cancel (B) | Circle | Backspace |
+| Enemy select next/prev | D-pad left/right | Left/right arrows |
 | Leader switch next/prev | D-pad up/down | Up/down arrows |
-| Open main menu | X / Triangle | M |
+| Open main menu | Triangle | M |
 | Tactics: switch character | L1 / R1 | Q / E |
-| Quit game | — | Escape (from normal mode) |
+| Quit game | — | Escape |
 
 The camera follows the party leader with smooth exponential interpolation and a raised pivot
 point to avoid floor clipping. When the player moves, the camera drags behind the movement
