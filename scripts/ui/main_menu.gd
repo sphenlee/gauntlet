@@ -16,7 +16,7 @@ func setup() -> void:
 
 	var title = Label.new()
 	title.text = "Menu"
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_font_size_override("font_size", 36)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -37,7 +37,7 @@ func _build_menu() -> void:
 	for i in range(entries.size()):
 		var label = Label.new()
 		label.text = entries[i]
-		label.add_theme_font_size_override("font_size", 20)
+		label.add_theme_font_size_override("font_size", 28)
 		label.name = "Entry" + str(i)
 		list.add_child(label)
 	_update_selection()

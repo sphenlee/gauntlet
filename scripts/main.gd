@@ -177,9 +177,14 @@ func _build_ui() -> void:
 
 	# Command menu (bottom left)
 	command_menu = CommandMenu.new()
-	command_menu.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	command_menu.position = Vector2(20, -120)
-	command_menu.custom_minimum_size = Vector2(200, 100)
+	command_menu.anchor_left = 0.0
+	command_menu.anchor_top = 1.0
+	command_menu.anchor_right = 0.0
+	command_menu.anchor_bottom = 1.0
+	command_menu.offset_left = 20
+	command_menu.offset_top = -140
+	command_menu.offset_right = 220
+	command_menu.offset_bottom = -20
 	command_menu.action_selected.connect(_on_action_selected)
 	command_menu.item_selected.connect(_on_item_selected)
 	command_menu.menu_cancelled.connect(_on_menu_cancelled)
@@ -188,24 +193,40 @@ func _build_ui() -> void:
 
 	# Character info (bottom right)
 	character_info = CharacterInfoPanel.new()
-	character_info.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	character_info.position = Vector2(-420, -100)
-	character_info.custom_minimum_size = Vector2(400, 80)
+	character_info.anchor_left = 1.0
+	character_info.anchor_top = 1.0
+	character_info.anchor_right = 1.0
+	character_info.anchor_bottom = 1.0
+	character_info.offset_left = -420
+	character_info.offset_top = -100
+	character_info.offset_right = -20
+	character_info.offset_bottom = -20
 	canvas.add_child(character_info)
 	character_info.setup(party)
 
 	# Enemy info (top left)
 	enemy_info = EnemyInfoPanel.new()
-	enemy_info.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	enemy_info.position = Vector2(20, 20)
-	enemy_info.custom_minimum_size = Vector2(200, 80)
+	enemy_info.anchor_left = 0.0
+	enemy_info.anchor_top = 0.0
+	enemy_info.anchor_right = 0.0
+	enemy_info.anchor_bottom = 0.0
+	enemy_info.offset_left = 20
+	enemy_info.offset_top = 20
+	enemy_info.offset_right = 220
+	enemy_info.offset_bottom = 100
 	canvas.add_child(enemy_info)
 	enemy_info.setup()
 
 	# Level display (top right)
 	level_label = Label.new()
-	level_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	level_label.position = Vector2(-120, 20)
+	level_label.anchor_left = 1.0
+	level_label.anchor_top = 0.0
+	level_label.anchor_right = 1.0
+	level_label.anchor_bottom = 0.0
+	level_label.offset_left = -140
+	level_label.offset_top = 20
+	level_label.offset_right = -20
+	level_label.offset_bottom = 50
 	level_label.add_theme_font_size_override("font_size", 24)
 	level_label.add_theme_color_override("font_color", Color.WHITE)
 	level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
@@ -226,20 +247,31 @@ func _build_ui() -> void:
 	game_over_label.visible = false
 	canvas.add_child(game_over_label)
 
-	# Main menu (center left)
+	# Main menu (nearly full screen)
 	main_menu = MainMenu.new()
-	main_menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
-	main_menu.position = Vector2(40, -100)
-	main_menu.custom_minimum_size = Vector2(200, 100)
+	main_menu.anchor_left = 0.05
+	main_menu.anchor_top = 0.05
+	main_menu.anchor_right = 0.95
+	main_menu.anchor_bottom = 0.95
+	main_menu.offset_left = 0
+	main_menu.offset_top = 0
+	main_menu.offset_right = 0
+	main_menu.offset_bottom = 0
 	main_menu.menu_closed.connect(_on_main_menu_closed)
 	main_menu.tactics_opened.connect(_on_tactics_opened)
 	canvas.add_child(main_menu)
 	main_menu.setup()
 
-	# Tactics editor (center)
+	# Tactics editor (nearly full screen)
 	tactics_editor = TacticsEditor.new()
-	tactics_editor.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	tactics_editor.custom_minimum_size = Vector2(500, 300)
+	tactics_editor.anchor_left = 0.05
+	tactics_editor.anchor_top = 0.05
+	tactics_editor.anchor_right = 0.95
+	tactics_editor.anchor_bottom = 0.95
+	tactics_editor.offset_left = 0
+	tactics_editor.offset_top = 0
+	tactics_editor.offset_right = 0
+	tactics_editor.offset_bottom = 0
 	tactics_editor.editor_closed.connect(_on_tactics_editor_closed)
 	canvas.add_child(tactics_editor)
 	tactics_editor.setup(party)

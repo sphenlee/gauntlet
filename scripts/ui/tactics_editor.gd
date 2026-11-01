@@ -30,7 +30,7 @@ func setup(p_party: Array[PlayerCharacter]) -> void:
 
 	# Header showing which character
 	header_label = Label.new()
-	header_label.add_theme_font_size_override("font_size", 22)
+	header_label.add_theme_font_size_override("font_size", 32)
 	header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(header_label)
 
@@ -39,16 +39,19 @@ func setup(p_party: Array[PlayerCharacter]) -> void:
 	col_header.add_theme_constant_override("separation", 10)
 	var toggle_hdr = Label.new()
 	toggle_hdr.text = "On"
-	toggle_hdr.custom_minimum_size = Vector2(40, 0)
+	toggle_hdr.add_theme_font_size_override("font_size", 20)
+	toggle_hdr.custom_minimum_size = Vector2(60, 0)
 	toggle_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col_header.add_child(toggle_hdr)
 	var cond_hdr = Label.new()
 	cond_hdr.text = "Condition"
-	cond_hdr.custom_minimum_size = Vector2(200, 0)
+	cond_hdr.add_theme_font_size_override("font_size", 20)
+	cond_hdr.custom_minimum_size = Vector2(300, 0)
 	col_header.add_child(cond_hdr)
 	var act_hdr = Label.new()
 	act_hdr.text = "Action"
-	act_hdr.custom_minimum_size = Vector2(160, 0)
+	act_hdr.add_theme_font_size_override("font_size", 20)
+	act_hdr.custom_minimum_size = Vector2(240, 0)
 	col_header.add_child(act_hdr)
 	main_vbox.add_child(col_header)
 
@@ -63,7 +66,7 @@ func setup(p_party: Array[PlayerCharacter]) -> void:
 	var picker_vbox = VBoxContainer.new()
 	picker_panel.add_child(picker_vbox)
 	picker_title = Label.new()
-	picker_title.add_theme_font_size_override("font_size", 18)
+	picker_title.add_theme_font_size_override("font_size", 24)
 	picker_vbox.add_child(picker_title)
 	picker_list = VBoxContainer.new()
 	picker_vbox.add_child(picker_list)
@@ -125,7 +128,8 @@ func _build_grid() -> void:
 		# Toggle
 		var toggle_label = Label.new()
 		toggle_label.name = "Toggle"
-		toggle_label.custom_minimum_size = Vector2(40, 0)
+		toggle_label.add_theme_font_size_override("font_size", 20)
+		toggle_label.custom_minimum_size = Vector2(60, 0)
 		toggle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		if tactic and tactic.enabled:
 			toggle_label.text = "[X]"
@@ -136,7 +140,8 @@ func _build_grid() -> void:
 		# Condition
 		var cond_label = Label.new()
 		cond_label.name = "Condition"
-		cond_label.custom_minimum_size = Vector2(200, 0)
+		cond_label.add_theme_font_size_override("font_size", 20)
+		cond_label.custom_minimum_size = Vector2(300, 0)
 		if tactic:
 			cond_label.text = Tactic.condition_name(tactic.condition)
 		else:
@@ -146,7 +151,8 @@ func _build_grid() -> void:
 		# Action
 		var act_label = Label.new()
 		act_label.name = "Action"
-		act_label.custom_minimum_size = Vector2(160, 0)
+		act_label.add_theme_font_size_override("font_size", 20)
+		act_label.custom_minimum_size = Vector2(240, 0)
 		if tactic:
 			act_label.text = Tactic.action_name(tactic.action)
 		else:
@@ -191,7 +197,7 @@ func _open_picker(title: String, options: Array) -> void:
 	for i in range(options.size()):
 		var label = Label.new()
 		label.text = options[i]
-		label.add_theme_font_size_override("font_size", 16)
+		label.add_theme_font_size_override("font_size", 20)
 		label.name = "Option" + str(i)
 		picker_list.add_child(label)
 
