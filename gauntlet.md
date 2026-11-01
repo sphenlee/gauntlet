@@ -182,7 +182,7 @@ None for now
 
 Main Menu
 ---------
-The main menu, opened by "X"/Triangle (playstation), or "M" on the kayboard.
+The main menu, opened by "X"/Triangle (playstation), or "M" on the keyboard.
 It shows the characters with their stats on the right, and the menu entries 
 on the left.
 
@@ -223,11 +223,67 @@ Conditions are as follows:
 * Enemy - Closest: triggers if an enemy is detected, selects the closest
 * Enemy - Party Leader Target: triggers if the part leader is targetting an enemy
     and targets the same enemy
+
 * Ally - KO: ally has 0 hp
 * Ally - HP < 75%: ally less than 75% HP
 * Ally - HP < 50%: ally less than 50% HP
+* Ally - Any: trigger if any ally makes sense for the selected action (see the
+  note about implicit conditions in the Tactics - Actions heading)
+
+For Enemy condition, color the whole row in pale red; for Ally conditions use
+pale blue. Rows that are toggelled off (or have no condition set) use Gray.
 
 Tactics - Actions
 -----------------
 
+Actions are as follows:
+* Attack - use the attack action
+* Item: <item> - one action per item in the game, uses the specific item
 
+Some actions also include an implicit condition which is AND-ed with the
+chosen condition. For example, items like potions will not be used
+if the target already has 100% HP; item like revive (not implemented yet) will not
+get used if the character is not KO'ed (0 HP).
+
+Remaining TODOs
+===============
+
+Combat & Actions
+----------------
+* Magic system — red/green/blue/arcane spell schools with submenu
+* Revive item — restore KOed character to 25% HP
+* Status effects — buffs, debuffs, icons in character info area
+* More weapon types with different POW stats and ranges
+* EXP and levelling for party characters
+* Character stats screen in main menu (stats on right side)
+
+Arenas & Progression
+--------------------
+* Multiple arena shapes (round, square, semicircular)
+* Multiple terrain types (grassy, snow, indoor castle, desert)
+* Boss enemies every 10 levels (much stronger than normal)
+* Rest stop arena after boss (replenish items, purchase weapons/accessories/spells)
+* Arena variety selection (random or sequential)
+
+Tactics
+-------
+* More conditions (e.g. "Enemy - Weakest", "Ally - Being Targeted")
+* More actions as they are added (spells, defend, etc.)
+* Tactics for party leader (currently only non-leader members use tactics)
+* Save/load tactic configurations
+
+Visual & Audio
+--------------
+* Low-poly character and enemy models (currently colored capsules)
+* Attack/hit/death animations
+* Sound effects and background music
+* Particle effects for attacks, healing, portal
+* Arena environment decoration (trees, rocks, torches, etc.)
+
+UI & Polish
+-----------
+* Main menu character stats panel (right side)
+* Damage/heal number animations (scale bounce, etc.)
+* Screen shake on hits
+* Battle start/end transitions
+* Save/load game state

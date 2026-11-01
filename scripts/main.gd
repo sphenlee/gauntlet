@@ -1,7 +1,7 @@
 class_name GameManager
 extends Node3D
 
-enum GameState { NORMAL, COMMAND_MENU, TARGET_SELECT, PARTY_TARGET_SELECT }
+enum GameState { NORMAL, COMMAND_MENU, TARGET_SELECT, PARTY_TARGET_SELECT, MAIN_MENU, TACTICS_EDITOR }
 
 var game_state: GameState = GameState.NORMAL
 var current_level: int = 1
@@ -20,6 +20,8 @@ var game_over_label: Label
 var game_over_timer: float = 0.0
 var game_over_delay: float = 3.0
 var is_game_over: bool = false
+var main_menu: MainMenu
+var tactics_editor: TacticsEditor
 
 # Target selection
 var selected_enemy_index: int = 0
@@ -70,6 +72,13 @@ func _build_party() -> void:
 		character.charge_started.connect(_on_character_charge_started)
 		character.damage_taken.connect(_on_character_damage_taken)
 		character.healed.connect(_on_character_healed)
+		# Initialize 5 empty tactic slots
+		for j in range(5):
+			character.tactics.append(Tactic.new())
+		# Set a default tactic: attack closest enemy
+		character.tactics[0].enabled = true
+		character.tactics[0].condition = Tactic.Condition.ENEMY_CLOSEST
+		character.tactics[0].action = Tactic.Action.ATTACK
 		party.append(character)
 		add_child(character)
 
@@ -217,6 +226,24 @@ func _build_ui() -> void:
 	game_over_label.visible = false
 	canvas.add_child(game_over_label)
 
+	# Main menu (center left)
+	main_menu = MainMenu.new()
+	main_menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	main_menu.position = Vector2(40, -100)
+	main_menu.custom_minimum_size = Vector2(200, 100)
+	main_menu.menu_closed.connect(_on_main_menu_closed)
+	main_menu.tactics_opened.connect(_on_tactics_opened)
+	canvas.add_child(main_menu)
+	main_menu.setup()
+
+	# Tactics editor (center)
+	tactics_editor = TacticsEditor.new()
+	tactics_editor.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	tactics_editor.custom_minimum_size = Vector2(500, 300)
+	tactics_editor.editor_closed.connect(_on_tactics_editor_closed)
+	canvas.add_child(tactics_editor)
+	tactics_editor.setup(party)
+
 func _build_selection_cursor() -> void:
 	selection_cursor = MeshInstance3D.new()
 	selection_cursor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -329,7 +356,7 @@ func _input(event: InputEvent) -> void:
 	if is_game_over:
 		return
 
-	# Escape quits from normal mode; in menus it cancels (handled by state handlers)
+	# Escape quits only from normal mode; in menus it cancels (handled by state handlers)
 	if event.is_action_pressed("action_cancel") and game_state == GameState.NORMAL:
 		get_tree().quit()
 		return
@@ -344,11 +371,17 @@ func _input(event: InputEvent) -> void:
 			_handle_target_select_input(event)
 		GameState.PARTY_TARGET_SELECT:
 			_handle_party_target_select_input(event)
+		GameState.MAIN_MENU:
+			if main_menu.handle_input(event):
+				get_viewport().set_input_as_handled()
+		GameState.TACTICS_EDITOR:
+			if tactics_editor.handle_input(event):
+				get_viewport().set_input_as_handled()
 
 func _set_game_state(new_state: GameState) -> void:
 	game_state = new_state
-	# Pause while command menu is open (including target selection from menu)
-	get_tree().paused = command_menu.is_open
+	# Pause while any menu is open
+	get_tree().paused = command_menu.is_open or main_menu.is_open or tactics_editor.visible
 
 func _handle_normal_input(event: InputEvent) -> void:
 	if event.is_action_pressed("action_confirm"):
@@ -370,6 +403,9 @@ func _handle_normal_input(event: InputEvent) -> void:
 		_cycle_leader(1)
 	elif event.is_action_pressed("leader_switch_prev"):
 		_cycle_leader(-1)
+	elif event.is_action_pressed("open_main_menu"):
+		main_menu.open_menu()
+		_set_game_state(GameState.MAIN_MENU)
 
 func _handle_target_select_input(event: InputEvent) -> void:
 	var alive_enemies = _get_alive_enemies()
@@ -470,19 +506,24 @@ func _handle_follower_formation(delta: float) -> void:
 			follower.follow_target(leader.global_position, delta)
 
 func _handle_auto_attacks(delta: float) -> void:
-	# Simple tactics: non-leader party members auto-attack nearest enemy
+	# Evaluate tactics for non-leader party members
 	for i in range(party.size()):
 		if i == party_leader_index:
 			continue
 		var member = party[i]
 		if not is_instance_valid(member) or member.state != PlayerCharacter.State.IDLE:
 			continue
-		member.auto_attack_cooldown -= delta
-		if member.auto_attack_cooldown <= 0:
-			var nearest = _find_nearest_enemy(member.global_position)
-			if nearest:
-				member.start_charge("attack", nearest, 2.0)
-				member.auto_attack_cooldown = member.auto_attack_delay + randf_range(0.5, 1.5)
+		member.tactic_cooldown -= delta
+		if member.tactic_cooldown <= 0:
+			var result = TacticsEngine.evaluate(member, member.tactics, party, enemies, party[party_leader_index], items)
+			if not result.is_empty():
+				member.start_charge(result["action"], result["target"], result["charge_time"])
+				# Deduct item from inventory if it's an item action
+				if result["action"].begins_with("item:"):
+					var item_id = result["action"].trim_prefix("item:")
+					if items.has(item_id):
+						items[item_id]["count"] -= 1
+			member.tactic_cooldown = member.tactic_delay + randf_range(0.3, 1.0)
 
 func _find_nearest_enemy(pos: Vector3) -> Enemy:
 	var nearest: Enemy = null
@@ -575,6 +616,17 @@ func _on_item_selected(item_id: String) -> void:
 	character_info.selected_index = selected_party_index
 
 func _on_menu_cancelled() -> void:
+	_set_game_state(GameState.NORMAL)
+
+func _on_main_menu_closed() -> void:
+	_set_game_state(GameState.NORMAL)
+
+func _on_tactics_opened() -> void:
+	main_menu.visible = false
+	tactics_editor.open_editor()
+	_set_game_state(GameState.TACTICS_EDITOR)
+
+func _on_tactics_editor_closed() -> void:
 	_set_game_state(GameState.NORMAL)
 
 func _on_character_damage_taken(character: PlayerCharacter, amount: int) -> void:

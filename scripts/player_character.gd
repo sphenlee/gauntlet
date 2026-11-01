@@ -27,9 +27,10 @@ var last_charge_duration: float = 1.5
 # Formation offset for followers
 var formation_offset: Vector3 = Vector3.ZERO
 
-# Auto-attack timer for non-leader tactics
-var auto_attack_cooldown: float = 0.0
-var auto_attack_delay: float = 2.0
+# Tactics
+var tactics: Array[Tactic] = []
+var tactic_cooldown: float = 0.0
+var tactic_delay: float = 1.5
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var mesh: MeshInstance3D
