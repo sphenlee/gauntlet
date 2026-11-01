@@ -6,21 +6,33 @@ It will be 3D, using a game engine that is free for open source usage.
 The game is an RPG/battle arena hybrid, a bit like a gauntlet or "trial" game.
 Single player, no networking or multiplayer is needed.
 
+**Engine:** Godot 4.7 (GDScript)
+
 Gameplay
 --------
 
 The gameplay involved entering an arena and defeating one or more enemies; once the enemies
-are defeated a door or portal opens to allow you to move to the next arena.
+are defeated a glowing portal opens near the north wall. Walking the party leader into the
+portal advances to the next arena.
 
-The arenas should be selected from a variety of shapes eg. round, square, semicircular; 
-with a variety of terrains, eg. grassy, snow, indoor castle, desert.
+The arenas should be selected from a variety of shapes eg. round, square, semicircular;
+with a variety of terrains, eg. grassy, snow, indoor castle, desert. (Currently only a square
+grassy arena is implemented.)
 
-The enemies are chosen at random, and get harder as the player progresses up the levels. Every
-10 levels there is a boss enemy which is much stronger than the normal enemies. Enemies
-are various fantasy style creatues and monsters.
+The enemies are chosen at random, and get harder as the player progresses up the levels.
+Enemy HP, strength, defense, and speed scale with the current level. The number of enemies
+also increases with level (capped at 4 per arena). Every 10 levels there is a boss enemy
+which is much stronger than the normal enemies (not yet implemented). Enemies
+are various fantasy style creatures and monsters.
 
 After defeating the boss, there is a "rest stop" arena where players can replenish items,
-and purchase new weapons, accessories and spells.
+and purchase new weapons, accessories and spells (not yet implemented).
+
+Between levels, the party is partially healed (25% of max HP) and all items are replenished
+to their maximum counts.
+
+If all three party members are defeated, a "GAME OVER" message is displayed and the game
+restarts at level 1 after a 3-second delay.
 
 Player Characters
 -----------------
@@ -34,7 +46,7 @@ Combat
 ------
 
 Combat is a realtime/turn based hybrid. Each character chooses an action (either by automation
-called "tactics" to be described later) or by direcly player input. The character then waits
+called "tactics" to be described later) or by directly player input. The character then waits
 a charging time depending on the action chosen, when the charge is complete they perform the action.
 The loop then repeats. Enemies also follow the same process, but their actions are programmed by
 automation only.
@@ -42,44 +54,78 @@ automation only.
 If the player selects an action for a character while another is charging, then the charge is cancelled
 and the new action starts to charge; there is no credit for the partial charge.
 
+After a character's attack action completes, if the target is still alive, the character automatically
+begins charging attack on the same target again. This auto-repeat is cancelled if the player opens
+the command menu or manually cancels the charge.
+
 Characters and enemies should move during the charging phase to remain within range of the target of the action.
 The party leader can be moved manually by the player and this overrides the automatic movement temporarily.
-Other characters only returns to their formation behind party leader if they are not charing or performing
+Other characters only returns to their formation behind party leader if they are not charging or performing
 an action.
+
+When a character or enemy begins charging an action, a coloured arc is drawn between the attacker and
+the target — blue for player characters attacking, orange for enemies, green for item usage. The arc
+fades out over 2 seconds.
+
+Non-leader party members use a simple default tactic: automatically attack the nearest enemy after
+a short cooldown. This will be replaced by the configurable tactics system described below.
 
 Controls
 --------
 The game should use a gamepad for input (with keyboard for backup).
-The left stick controls the party leader movement. The camera position is adjusted by the right stick.
-The camera should "follow" the player and re-centre as they move.
 
-Pressing left/right arrows should enter an enemy selection mode. Each press moves to the next enemy in
+| Action | Gamepad | Keyboard |
+|--------|---------|----------|
+| Move party leader | Left stick | WASD |
+| Camera orbit | Right stick | IJKL |
+| Confirm (A) | A / Cross | Enter / Space |
+| Cancel (B) | B / Circle | Escape / Backspace |
+| Enemy select next/prev | D-pad left/right | Q/E or left/right arrows |
+| Leader switch next/prev | D-pad up/down | Up/down arrows |
+| Quit game | — | Escape (from normal mode) |
+
+The camera follows the party leader with smooth exponential interpolation and a raised pivot
+point to avoid floor clipping. When the player moves, the camera drags behind the movement
+direction. The right stick (or IJKL) can manually orbit the camera; it auto-recentres when
+the player moves.
+
+Pressing left/right enters enemy selection mode. Each press moves to the next enemy in
 the arena placing a circle/cursor on them and displaying info at the top left of the screen.
 
-Pressing up/down arrows enters a mode to change the party leader, each character is selected in turn
-with the same circle/cursor. Pressing A will change the leader to the selected character. The camera should
-snap to the new character and the mode should return to normal.
+Pressing up/down instantly switches the party leader to the next/previous alive character.
+The camera glides smoothly to the new leader. The leader's row in the character info panel
+is highlighted with a blue background.
 
-Pressing A will open the command selection window. A menu appears at the bottom left with the available
-combat actions. Selection in this menu uses up/down arrows and A to confirm, B to cancel.
-For actions that need a target, use the same circle/cursor, and up/down for selecting a character
-or left/right for an enemy.
+Pressing A opens the command selection window. A menu appears at the bottom left with the
+available combat actions. Selection in this menu uses up/down and A to confirm, B to cancel.
+The game pauses while the menu is open. The menu stays open (showing the selected action
+highlighted in green) while choosing a target. For actions that need a target, use the
+circle/cursor — left/right for enemies, up/down for party members.
 
 UI
 --
-The UI contains 3 main areas.
+The UI contains 4 main areas.
 
  * top left is the info area; this shows info about a selected enemy when in selection mode, or choosing
    a target in command mode.
+ * top right shows the current level number.
  * bottom left is for the command selection window which only appears in this mode (after pressing A).
- * bottom right is the character info area. This area shows a grid with one row for each character, and
-   rows for:
-     * a small bar showing the name of the action being charged and it's progress - this changes color
-       when the action is happening
-     * Character's name
-     * Character's hit points (HP)
-     * Character's mana points (MP)
-     * Any status effects shown with icons
+   The menu supports submenus (e.g. Item opens a list of available items with counts).
+ * bottom right is the character info area. This area shows one horizontal row per character with:
+     * a small bar showing the name of the action being charged and its progress — yellow while
+       charging, green while the action is executing
+     * Character's name (cyan for the party leader, yellow with ">" prefix when selected as target)
+     * Character's hit points (HP) — text overlaid on the bar
+     * Character's mana points (MP) — text overlaid on the bar
+     * The party leader's row has a blue-tinted background highlight
+     * Any status effects shown with icons (not yet implemented)
+
+Additionally:
+ * A "GAME OVER" message appears in the centre of the screen when all party members are defeated,
+   restarting at level 1 after a 3-second delay.
+ * Billboarded HP bars float above each character (blue) and enemy (orange) in the 3D world.
+ * Floating damage numbers appear above targets when hit — blue for damage to enemies, orange for
+   damage to characters, green with a "+" prefix for healing.
 
 Character Stats
 ---------------
@@ -120,11 +166,68 @@ None for now
 Items
 -----
 
-* potion - restores 25% of the character's HP
-* hi-potion - restores 50% of the character's HP
-* revive - restores a KOed character to 25% HP
+Items are used via the command menu's Item submenu. The player selects an item, then selects
+a party member to use it on. The character charges the item use (twice as fast as an attack)
+and a green arc is shown between the user and the target.
+
+Items are replenished to their maximum counts after advancing to the next arena.
+
+* potion (x3) - restores 25% of the character's HP
+* hi-potion (x1) - restores 50% of the character's HP
+* revive - restores a KOed character to 25% HP (not yet implemented)
 
 Status Effects
 --------------
 None for now
+
+Main Menu
+---------
+The main menu, opened by "X"/Triangle (playstation), or "M" on the kayboard.
+It shows the characters with their stats on the right, and the menu entries 
+on the left.
+
+For now, only one entry is visible - "Tactics".
+
+
+Tactics - Character "AI"
+------------------------
+
+Each character has a set of tactics that the player can set.
+A tactic is a condition and action pair. They are evaluated from top
+to bottom whenever a character needs to pick their next action.
+The first condition that is satisfied causes that action to be chosen.
+Conditions also have an implied target; for example, "Enemy - Closest" 
+implicitly targets the closest enemy, and "Ally - HP < 50%" implicily
+targets the party member with less than 50% HP.
+
+There is a menu entry for customising tactic in the main menu.
+When selected, it opens the tactics editor.
+
+The editor shows the list of tactics as a grid, for now with 5 rows; all initially are
+empty. A cursor points to one of the cells of this grid and can be moved with the d-pad
+(or keyboard equivalent). A/Cross will select the current cell and perform an action.
+
+Each row has 3 columns:
+ 1. an on/off toggle - selecting will toggle this row (off rows are skipped when selecting
+    actions)
+ 2. the condition - selecting this will open a submenu to choose a condition
+ 3. the action - selecting will open a submenu to choose an action
+
+B/Circle returns to the main menu.
+
+Tactics - Conditions
+--------------------
+
+Conditions are as follows:
+* Enemy - Any: triggers is any enemy is detected, selects one at random
+* Enemy - Closest: triggers if an enemy is detected, selects the closest
+* Enemy - Party Leader Target: triggers if the part leader is targetting an enemy
+    and targets the same enemy
+* Ally - KO: ally has 0 hp
+* Ally - HP < 75%: ally less than 75% HP
+* Ally - HP < 50%: ally less than 50% HP
+
+Tactics - Actions
+-----------------
+
 
