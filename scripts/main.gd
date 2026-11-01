@@ -654,6 +654,7 @@ func _on_main_menu_closed() -> void:
 	_set_game_state(GameState.NORMAL)
 
 func _on_tactics_opened() -> void:
+	main_menu.is_open = false
 	main_menu.visible = false
 	tactics_editor.open_editor()
 	_set_game_state(GameState.TACTICS_EDITOR)
