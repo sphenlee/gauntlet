@@ -11,57 +11,53 @@ static func evaluate(character: PlayerCharacter, tactics: Array[Tactic], party: 
 		if tactic.condition == Tactic.Condition.NONE or tactic.action == Tactic.Action.NONE:
 			continue
 
-		var target = _resolve_condition(character, tactic, party, enemies, leader)
-		if target == null:
-			continue
+		var candidates = _resolve_condition(character, tactic, party, enemies, leader)
 
-		# Check implicit conditions on the action
-		if not _check_action_implicit(tactic.action, target, items):
-			continue
-
-		return _build_action(tactic.action, target)
+		# Check implicit conditions on each candidate, pick first valid
+		for target in candidates:
+			if _check_action_implicit(tactic.action, target, items):
+				return _build_action(tactic.action, target)
 
 	return {}
 
-static func _resolve_condition(character: PlayerCharacter, tactic: Tactic, party: Array[PlayerCharacter], enemies: Array[Enemy], leader: PlayerCharacter) -> Node3D:
+static func _resolve_condition(character: PlayerCharacter, tactic: Tactic, party: Array[PlayerCharacter], enemies: Array[Enemy], leader: PlayerCharacter) -> Array[Node3D]:
+	var candidates: Array[Node3D] = []
+
 	match tactic.condition:
 		Tactic.Condition.ENEMY_ANY:
-			var alive = _alive_enemies(enemies)
-			if alive.is_empty():
-				return null
-			return alive[randi() % alive.size()]
+			# All alive enemies, shuffled
+			candidates = _alive_enemies(enemies).duplicate()
+			candidates.shuffle()
 
 		Tactic.Condition.ENEMY_CLOSEST:
-			return _nearest_enemy(character.global_position, enemies)
+			# All alive enemies, sorted by distance
+			candidates = _alive_enemies(enemies).duplicate()
+			candidates.sort_custom(func(a, b): return character.global_position.distance_to(a.global_position) < character.global_position.distance_to(b.global_position))
 
 		Tactic.Condition.ENEMY_LEADER_TARGET:
 			if leader and is_instance_valid(leader):
 				var leader_target = leader.charge_target
 				if leader_target and is_instance_valid(leader_target) and leader_target is Enemy:
 					if leader_target.state != Enemy.State.DEAD:
-						return leader_target
-			return null
+						candidates.append(leader_target)
 
 		Tactic.Condition.ALLY_KO:
 			for member in party:
 				if is_instance_valid(member) and member.state == PlayerCharacter.State.DEAD:
-					return member
-			return null
+					candidates.append(member)
 
 		Tactic.Condition.ALLY_HP_LT_75:
-			return _ally_below_hp_pct(party, 0.75)
+			candidates = _allies_below_hp_pct(party, 0.75)
 
 		Tactic.Condition.ALLY_HP_LT_50:
-			return _ally_below_hp_pct(party, 0.50)
+			candidates = _allies_below_hp_pct(party, 0.50)
 
 		Tactic.Condition.ALLY_ANY:
-			# Return first alive ally (including self)
 			for member in party:
 				if is_instance_valid(member) and member.state != PlayerCharacter.State.DEAD:
-					return member
-			return null
+					candidates.append(member)
 
-	return null
+	return candidates
 
 static func _check_action_implicit(action: Tactic.Action, target: Node3D, items: Dictionary) -> bool:
 	match action:
@@ -116,20 +112,11 @@ static func _alive_enemies(enemies: Array[Enemy]) -> Array[Enemy]:
 			alive.append(enemy)
 	return alive
 
-static func _nearest_enemy(pos: Vector3, enemies: Array[Enemy]) -> Enemy:
-	var nearest: Enemy = null
-	var nearest_dist: float = INF
-	for enemy in enemies:
-		if is_instance_valid(enemy) and enemy.state != Enemy.State.DEAD:
-			var dist = pos.distance_to(enemy.global_position)
-			if dist < nearest_dist:
-				nearest_dist = dist
-				nearest = enemy
-	return nearest
 
-static func _ally_below_hp_pct(party: Array[PlayerCharacter], pct: float) -> PlayerCharacter:
+static func _allies_below_hp_pct(party: Array[PlayerCharacter], pct: float) -> Array[Node3D]:
+	var result: Array[Node3D] = []
 	for member in party:
 		if is_instance_valid(member) and member.state != PlayerCharacter.State.DEAD:
 			if float(member.stats.current_hp) / float(member.stats.max_hp) < pct:
-				return member
-	return null
+				result.append(member)
+	return result
