@@ -26,12 +26,14 @@ static func _resolve_condition(character: PlayerCharacter, tactic: Tactic, party
 	match tactic.condition:
 		Tactic.Condition.ENEMY_ANY:
 			# All alive enemies, shuffled
-			candidates = _alive_enemies(enemies).duplicate()
+			for enemy in _alive_enemies(enemies):
+				candidates.append(enemy)
 			candidates.shuffle()
 
 		Tactic.Condition.ENEMY_CLOSEST:
 			# All alive enemies, sorted by distance
-			candidates = _alive_enemies(enemies).duplicate()
+			for enemy in _alive_enemies(enemies):
+				candidates.append(enemy)
 			candidates.sort_custom(func(a, b): return character.global_position.distance_to(a.global_position) < character.global_position.distance_to(b.global_position))
 
 		Tactic.Condition.ENEMY_LEADER_TARGET:
