@@ -17,6 +17,7 @@ enum Action {
 	ATTACK,
 	ITEM_POTION,
 	ITEM_HI_POTION,
+	ITEM_REVIVE,
 }
 
 @export var enabled: bool = false
@@ -41,6 +42,7 @@ static func action_name(act: Action) -> String:
 		Action.ATTACK: return "Attack"
 		Action.ITEM_POTION: return "Item: Potion"
 		Action.ITEM_HI_POTION: return "Item: Hi-Potion"
+		Action.ITEM_REVIVE: return "Item: Revive"
 	return "?"
 
 static func condition_is_enemy(cond: Condition) -> bool:
@@ -50,12 +52,13 @@ static func condition_is_ally(cond: Condition) -> bool:
 	return cond in [Condition.ALLY_KO, Condition.ALLY_HP_LT_75, Condition.ALLY_HP_LT_50, Condition.ALLY_ANY]
 
 static func action_is_item(act: Action) -> bool:
-	return act in [Action.ITEM_POTION, Action.ITEM_HI_POTION]
+	return act in [Action.ITEM_POTION, Action.ITEM_HI_POTION, Action.ITEM_REVIVE]
 
 static func action_to_item_id(act: Action) -> String:
 	match act:
 		Action.ITEM_POTION: return "potion"
 		Action.ITEM_HI_POTION: return "hi_potion"
+		Action.ITEM_REVIVE: return "revive"
 	return ""
 
 static func all_conditions() -> Array[Condition]:
@@ -76,4 +79,5 @@ static func all_actions() -> Array[Action]:
 		Action.ATTACK,
 		Action.ITEM_POTION,
 		Action.ITEM_HI_POTION,
+		Action.ITEM_REVIVE,
 	]

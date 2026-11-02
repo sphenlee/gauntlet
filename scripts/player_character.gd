@@ -23,6 +23,7 @@ var acting_timer: float = 0.0
 var acting_duration: float = 0.5
 var last_attack_target: Node3D = null
 var last_charge_duration: float = 1.5
+var death_position: Vector3 = Vector3.ZERO
 
 # Formation offset for followers
 var formation_offset: Vector3 = Vector3.ZERO
@@ -157,17 +158,22 @@ func _execute_action() -> void:
 			charge_target.take_hit(damage)
 	elif charge_action.begins_with("item:") and charge_target and is_instance_valid(charge_target):
 		var item_id = charge_action.trim_prefix("item:")
-		var heal_pct = 0.0
 		match item_id:
 			"potion":
-				heal_pct = 0.25
+				if charge_target is PlayerCharacter and charge_target.state != State.DEAD:
+					var heal_amount = int(charge_target.stats.max_hp * 0.25)
+					charge_target.stats.heal(heal_amount)
+					charge_target.hp_changed.emit(charge_target)
+					charge_target.healed.emit(charge_target, heal_amount)
 			"hi_potion":
-				heal_pct = 0.50
-		if heal_pct > 0.0 and charge_target is PlayerCharacter:
-			var heal_amount = int(charge_target.stats.max_hp * heal_pct)
-			charge_target.stats.heal(heal_amount)
-			charge_target.hp_changed.emit(charge_target)
-			charge_target.healed.emit(charge_target, heal_amount)
+				if charge_target is PlayerCharacter and charge_target.state != State.DEAD:
+					var heal_amount = int(charge_target.stats.max_hp * 0.50)
+					charge_target.stats.heal(heal_amount)
+					charge_target.hp_changed.emit(charge_target)
+					charge_target.healed.emit(charge_target, heal_amount)
+			"revive":
+				if charge_target is PlayerCharacter and charge_target.state == State.DEAD:
+					charge_target.revive(0.25)
 
 	charge_action = ""
 	charge_target = null
@@ -193,11 +199,23 @@ func take_hit(damage: int) -> void:
 func _die() -> void:
 	state = State.DEAD
 	last_attack_target = null
+	death_position = global_position
 	died.emit(self)
 	# Fall over
 	var tween = create_tween()
 	tween.tween_property(self, "rotation_degrees:z", 90.0, 0.5)
 	tween.tween_property(self, "position:y", position.y - 0.5, 0.3)
+
+func revive(heal_pct: float) -> void:
+	if state != State.DEAD:
+		return
+	stats.current_hp = int(stats.max_hp * heal_pct)
+	state = State.IDLE
+	# Restore at death position
+	global_position = death_position
+	rotation_degrees.z = 0
+	hp_changed.emit(self)
+	healed.emit(self, stats.current_hp)
 
 func get_charge_progress() -> float:
 	if state == State.CHARGING and charge_duration > 0:

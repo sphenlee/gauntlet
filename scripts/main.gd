@@ -32,6 +32,7 @@ var selection_cursor: MeshInstance3D
 var items: Dictionary = {
 	"potion": {"name": "Potion", "count": 3, "max": 3, "heal_pct": 0.25},
 	"hi_potion": {"name": "Hi-Potion", "count": 1, "max": 1, "heal_pct": 0.50},
+	"revive": {"name": "Revive", "count": 1, "max": 1, "heal_pct": 0.25},
 }
 var pending_item_id: String = ""
 
@@ -488,8 +489,15 @@ func _use_item_on_party_member(index: int) -> void:
 	if index < 0 or index >= party.size():
 		return
 	var target = party[index]
-	if not is_instance_valid(target) or target.state == PlayerCharacter.State.DEAD:
+	if not is_instance_valid(target):
 		return
+	# Revive targets dead characters, other items target alive ones
+	if pending_item_id == "revive":
+		if target.state != PlayerCharacter.State.DEAD:
+			return
+	else:
+		if target.state == PlayerCharacter.State.DEAD:
+			return
 	if pending_item_id.is_empty():
 		return
 

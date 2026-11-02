@@ -84,6 +84,17 @@ static func _check_action_implicit(action: Tactic.Action, target: Node3D, items:
 				return false
 			return true
 
+		Tactic.Action.ITEM_REVIVE:
+			# Must have items left
+			if items.has("revive") and items["revive"]["count"] <= 0:
+				return false
+			# Can only use on KOed party members
+			if not target is PlayerCharacter:
+				return false
+			if target.state != PlayerCharacter.State.DEAD:
+				return false
+			return true
+
 	return false
 
 static func _build_action(action: Tactic.Action, target: Node3D) -> Dictionary:
@@ -94,6 +105,8 @@ static func _build_action(action: Tactic.Action, target: Node3D) -> Dictionary:
 			return {"action": "item:potion", "target": target, "charge_time": 1.0}
 		Tactic.Action.ITEM_HI_POTION:
 			return {"action": "item:hi_potion", "target": target, "charge_time": 1.0}
+		Tactic.Action.ITEM_REVIVE:
+			return {"action": "item:revive", "target": target, "charge_time": 1.0}
 	return {}
 
 static func _alive_enemies(enemies: Array[Enemy]) -> Array[Enemy]:

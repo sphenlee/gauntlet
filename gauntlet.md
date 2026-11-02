@@ -176,7 +176,8 @@ Items are replenished to their maximum counts after advancing to the next arena.
 
 * potion (x3) - restores 25% of the character's HP
 * hi-potion (x1) - restores 50% of the character's HP
-* revive - restores a KOed character to 25% HP (not yet implemented)
+* revive (x1) - restores a KOed character to 25% HP; the character reappears at the
+  location where they were defeated
 
 Status Effects
 --------------
@@ -248,7 +249,8 @@ Actions are as follows:
 Some actions also include an implicit condition which is AND-ed with the
 chosen condition. For example, items like potions will not be used
 if the target already has 100% HP; item like revive (not implemented yet) will not
-get used if the character is not KO'ed (0 HP).
+get used if the character is not KO'ed (0 HP). Items will only be selected for
+use if the pary has enough in inventory.
 
 Remaining TODOs
 ===============
@@ -256,7 +258,6 @@ Remaining TODOs
 Combat & Actions
 ----------------
 * Magic system — red/green/blue/arcane spell schools with submenu
-* Revive item — restore KOed character to 25% HP
 * Status effects — buffs, debuffs, icons in character info area
 * More weapon types with different POW stats and ranges
 * EXP and levelling for party characters
