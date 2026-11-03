@@ -142,6 +142,34 @@ Characters have the following stats:
 
 Characters also have a level (LVL) and experience (EXP).
 
+Experience & Levelling
+----------------------
+
+Characters earn EXP in two ways:
+* **Killing blow** — the character who lands the killing blow on an enemy earns
+  EXP equal to 10 x the enemy's level
+* **Arena clear bonus** — when the party advances through the portal, all alive
+  party members earn EXP equal to 15 x the arena level
+
+EXP needed to level up: 50 x level^1.5 (e.g. level 1→2 needs 50, level 2→3 needs 141,
+level 3→4 needs 260, etc.)
+
+On level up, the character's stats increase by fixed growth rates that differ per
+character, and they are fully healed (HP and MP restored to max).
+
+| Stat Growth | Hero | Warrior | Mage |
+|-------------|------|---------|------|
+| HP          | +12  | +15     | +8   |
+| MP          | +4   | +2      | +8   |
+| STR         | +3   | +4      | +1   |
+| DEF         | +2   | +3      | +1   |
+| AGL         | +2   | +1      | +3   |
+| LCK         | +1   | +1      | +2   |
+
+A "LEVEL UP!" floating number appears above the character in yellow when they level up.
+The character info panel shows each character's level next to their name and an EXP bar
+showing progress toward the next level.
+
 Combat Actions
 --------------
 
@@ -260,7 +288,6 @@ Combat & Actions
 * Magic system — red/green/blue/arcane spell schools with submenu
 * Status effects — buffs, debuffs, icons in character info area
 * More weapon types with different POW stats and ranges
-* EXP and levelling for party characters
 * Character stats screen in main menu (stats on right side)
 
 Arenas & Progression

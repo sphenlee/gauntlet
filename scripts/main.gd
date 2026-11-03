@@ -73,6 +73,7 @@ func _build_party() -> void:
 		character.charge_started.connect(_on_character_charge_started)
 		character.damage_taken.connect(_on_character_damage_taken)
 		character.healed.connect(_on_character_healed)
+		character.levelled_up.connect(_on_character_levelled_up)
 		# Initialize 5 empty tactic slots
 		for j in range(5):
 			character.tactics.append(Tactic.new())
@@ -103,6 +104,31 @@ func _create_player_character(char_name: String, color: Color) -> PlayerCharacte
 	stats.weapon_name = "Dagger"
 	stats.weapon_pow = 5
 	stats.weapon_range = 2.5
+
+	# Per-character growth rates
+	match char_name:
+		"Hero":
+			stats.growth_hp = 12
+			stats.growth_mp = 4
+			stats.growth_str = 3
+			stats.growth_def = 2
+			stats.growth_agl = 2
+			stats.growth_lck = 1
+		"Warrior":
+			stats.growth_hp = 15
+			stats.growth_mp = 2
+			stats.growth_str = 4
+			stats.growth_def = 3
+			stats.growth_agl = 1
+			stats.growth_lck = 1
+		"Mage":
+			stats.growth_hp = 8
+			stats.growth_mp = 8
+			stats.growth_str = 1
+			stats.growth_def = 1
+			stats.growth_agl = 3
+			stats.growth_lck = 2
+
 	character.stats = stats
 
 	# Collision
@@ -291,7 +317,7 @@ func _build_selection_cursor() -> void:
 	mat.emission = Color(1.0, 1.0, 0.0)
 	mat.emission_energy_multiplier = 1.5
 	selection_cursor.set_surface_override_material(0, mat)
-	selection_cursor.rotation_degrees.x = 90.0
+	#selection_cursor.rotation_degrees.x = 90.0
 	selection_cursor.visible = false
 	add_child(selection_cursor)
 
@@ -333,6 +359,7 @@ func _create_enemy(index: int) -> Enemy:
 	stats.agility = 4 + current_level
 	stats.luck = 3
 	stats.weapon_pow = 3 + current_level
+	stats.level = current_level
 	enemy.stats = stats
 
 	# Scale difficulty
@@ -676,6 +703,9 @@ func _on_character_damage_taken(character: PlayerCharacter, amount: int) -> void
 func _on_character_healed(character: PlayerCharacter, amount: int) -> void:
 	_spawn_floating_number("+" + str(amount), Color(0.2, 1.0, 0.3), character.global_position)
 
+func _on_character_levelled_up(character: PlayerCharacter) -> void:
+	_spawn_floating_number("LEVEL UP! Lv" + str(character.stats.level), Color(1.0, 1.0, 0.3), character.global_position)
+
 func _on_enemy_damage_taken(enemy: Enemy, amount: int) -> void:
 	_spawn_floating_number(str(amount), Color(0.3, 0.6, 1.0), enemy.global_position)
 
@@ -742,10 +772,12 @@ func _advance_level() -> void:
 			party[i].position = Vector3(i * 2.0 - 2.0, 0.5, 5.0)
 			party[i].state = PlayerCharacter.State.IDLE
 
-	# Heal party slightly between levels
+	# Heal party slightly between levels and award arena clear EXP
+	var clear_exp = 15 * current_level
 	for member in party:
 		if is_instance_valid(member) and member.state != PlayerCharacter.State.DEAD:
 			member.stats.heal(member.stats.max_hp / 4)
+			member.gain_exp(clear_exp)
 
 	# Replenish items
 	for key in items:

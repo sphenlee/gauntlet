@@ -43,12 +43,12 @@ func _build_rows() -> void:
 		)
 		row.add_child(charge_container)
 
-		# Name
+		# Name with level
 		var name_label = Label.new()
 		name_label.name = "NameLabel"
-		name_label.text = character.stats.character_name
+		name_label.text = "%s Lv%d" % [character.stats.character_name, character.stats.level]
 		name_label.add_theme_font_size_override("font_size", 13)
-		name_label.custom_minimum_size = Vector2(55, 0)
+		name_label.custom_minimum_size = Vector2(80, 0)
 		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(name_label)
 
@@ -69,6 +69,15 @@ func _build_rows() -> void:
 			"%d/%d" % [character.stats.current_mp, character.stats.max_mp]
 		)
 		row.add_child(mp_container)
+
+		# EXP bar with overlaid text
+		var exp_container = _make_bar_with_label(
+			"EXPBar", "EXPLabel",
+			character.stats.exp_to_next_level(), character.stats.experience,
+			Vector2(80, 18),
+			"EXP"
+		)
+		row.add_child(exp_container)
 
 		bg.add_child(row)
 		container.add_child(bg)
@@ -148,6 +157,15 @@ func _process(_delta: float) -> void:
 		if mp_label:
 			mp_label.text = "%d/%d" % [character.stats.current_mp, character.stats.max_mp]
 
+		# Update EXP
+		var exp_bar = _find_child_recursive(row, "EXPBar") as ProgressBar
+		var exp_label = _find_child_recursive(row, "EXPLabel") as Label
+		if exp_bar:
+			exp_bar.max_value = character.stats.exp_to_next_level()
+			exp_bar.value = character.stats.experience
+		if exp_label:
+			exp_label.text = "EXP"
+
 		# Highlight leader and selection
 		if name_label:
 			var prefix = ""
@@ -158,7 +176,7 @@ func _process(_delta: float) -> void:
 				name_label.add_theme_color_override("font_color", Color.CYAN)
 			else:
 				name_label.add_theme_color_override("font_color", Color.WHITE)
-			name_label.text = prefix + character.stats.character_name
+			name_label.text = "%s%s Lv%d" % [prefix, character.stats.character_name, character.stats.level]
 
 		# Leader background highlight
 		var bg_style = row.get_theme_stylebox("panel") as StyleBoxFlat

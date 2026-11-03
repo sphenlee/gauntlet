@@ -7,6 +7,7 @@ signal died(character: PlayerCharacter)
 signal charge_started(character: PlayerCharacter, target: Node3D)
 signal damage_taken(character: PlayerCharacter, amount: int)
 signal healed(character: PlayerCharacter, amount: int)
+signal levelled_up(character: PlayerCharacter)
 
 enum State { IDLE, CHARGING, ACTING, DEAD }
 
@@ -156,6 +157,9 @@ func _execute_action() -> void:
 		var damage = _calculate_damage()
 		if charge_target.has_method("take_hit"):
 			charge_target.take_hit(damage)
+			# Award EXP for killing blow
+			if charge_target is Enemy and charge_target.state == Enemy.State.DEAD:
+				gain_exp(10 * charge_target.stats.level)
 	elif charge_action.begins_with("item:") and charge_target and is_instance_valid(charge_target):
 		var item_id = charge_action.trim_prefix("item:")
 		match item_id:
@@ -205,6 +209,12 @@ func _die() -> void:
 	var tween = create_tween()
 	tween.tween_property(self, "rotation_degrees:z", 90.0, 0.5)
 	tween.tween_property(self, "position:y", position.y - 0.5, 0.3)
+
+func gain_exp(amount: int) -> void:
+	if state == State.DEAD:
+		return
+	if stats.gain_exp(amount):
+		levelled_up.emit(self)
 
 func revive(heal_pct: float) -> void:
 	if state != State.DEAD:
