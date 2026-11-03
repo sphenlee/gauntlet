@@ -3,6 +3,7 @@ extends PanelContainer
 
 signal action_selected(action: String)
 signal item_selected(item_id: String)
+signal magic_selected(spell_id: String)
 signal menu_cancelled
 
 var actions: Array[String] = ["Attack", "Item"]
@@ -83,7 +84,10 @@ func _update_selection() -> void:
 		var label = list.get_child(i) as Label
 		var text: String
 		if in_submenu:
-			text = submenu_items[i]["name"] + " x" + str(submenu_items[i]["count"])
+			if submenu_items[i].has("mp_cost"):
+				text = submenu_items[i]["name"] + " (" + str(submenu_items[i]["mp_cost"]) + " MP)"
+			else:
+				text = submenu_items[i]["name"] + " x" + str(submenu_items[i]["count"])
 		else:
 			text = actions[i]
 
@@ -95,7 +99,9 @@ func _update_selection() -> void:
 				label.add_theme_color_override("font_color", Color.YELLOW)
 				label.text = "> " + text
 		else:
-			if in_submenu and submenu_items[i]["count"] <= 0:
+			if in_submenu and submenu_items[i].get("count", 1) <= 0:
+				label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+			elif in_submenu and submenu_items[i].get("disabled", false):
 				label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 			else:
 				label.add_theme_color_override("font_color", Color.WHITE)
@@ -120,16 +126,15 @@ func handle_input(event: InputEvent) -> bool:
 	elif event.is_action_pressed("action_confirm"):
 		if in_submenu:
 			var item = submenu_items[selected_index]
-			if item["count"] > 0:
-				item_selected.emit(item["id"])
+			if item.get("count", 1) > 0:
+				if item.has("mp_cost"):
+					magic_selected.emit(item["id"])
+				else:
+					item_selected.emit(item["id"])
 			return true
 		else:
 			var action = actions[selected_index].to_lower()
-			if action == "item":
-				# Handled by main.gd via action_selected
-				action_selected.emit(action)
-			else:
-				action_selected.emit(action)
+			action_selected.emit(action)
 			return true
 	elif event.is_action_pressed("action_cancel"):
 		if in_submenu:

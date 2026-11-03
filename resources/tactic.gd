@@ -18,6 +18,7 @@ enum Action {
 	ITEM_POTION,
 	ITEM_HI_POTION,
 	ITEM_REVIVE,
+	SPELL_FIRE,
 }
 
 @export var enabled: bool = false
@@ -43,6 +44,7 @@ static func action_name(act: Action) -> String:
 		Action.ITEM_POTION: return "Item: Potion"
 		Action.ITEM_HI_POTION: return "Item: Hi-Potion"
 		Action.ITEM_REVIVE: return "Item: Revive"
+		Action.SPELL_FIRE: return "Magic: Fire"
 	return "?"
 
 static func condition_is_enemy(cond: Condition) -> bool:
@@ -80,4 +82,5 @@ static func all_actions() -> Array[Action]:
 		Action.ITEM_POTION,
 		Action.ITEM_HI_POTION,
 		Action.ITEM_REVIVE,
+		Action.SPELL_FIRE,
 	]

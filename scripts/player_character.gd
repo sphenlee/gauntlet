@@ -8,6 +8,7 @@ signal charge_started(character: PlayerCharacter, target: Node3D)
 signal damage_taken(character: PlayerCharacter, amount: int)
 signal healed(character: PlayerCharacter, amount: int)
 signal levelled_up(character: PlayerCharacter)
+signal spell_cast(character: PlayerCharacter, spell_id: String, target: Node3D)
 
 enum State { IDLE, CHARGING, ACTING, DEAD }
 
@@ -25,6 +26,7 @@ var acting_duration: float = 0.5
 var last_attack_target: Node3D = null
 var last_charge_duration: float = 1.5
 var death_position: Vector3 = Vector3.ZERO
+var can_use_magic: bool = false
 
 # Formation offset for followers
 var formation_offset: Vector3 = Vector3.ZERO
@@ -88,8 +90,11 @@ func _handle_charging(delta: float) -> void:
 	charge_time += delta
 	charge_changed.emit(self)
 
-	# Move toward target if out of range
-	if charge_target and is_instance_valid(charge_target):
+	# Magic is ranged — don't move toward target
+	var is_magic = charge_action.begins_with("magic:")
+
+	# Move toward target if out of range (melee only)
+	if not is_magic and charge_target and is_instance_valid(charge_target):
 		var dist = global_position.distance_to(charge_target.global_position)
 		if dist > stats.weapon_range:
 			var dir = (charge_target.global_position - global_position).normalized()
@@ -99,6 +104,9 @@ func _handle_charging(delta: float) -> void:
 		else:
 			velocity.x = move_toward(velocity.x, 0, move_speed)
 			velocity.z = move_toward(velocity.z, 0, move_speed)
+	else:
+		velocity.x = move_toward(velocity.x, 0, move_speed)
+		velocity.z = move_toward(velocity.z, 0, move_speed)
 
 	if charge_time >= charge_duration:
 		_execute_action()
@@ -160,6 +168,19 @@ func _execute_action() -> void:
 			# Award EXP for killing blow
 			if charge_target is Enemy and charge_target.state == Enemy.State.DEAD:
 				gain_exp(10 * charge_target.stats.level)
+	elif charge_action.begins_with("magic:") and charge_target and is_instance_valid(charge_target):
+		var spell_id = charge_action.trim_prefix("magic:")
+		match spell_id:
+			"fire":
+				var mp_cost = 10
+				if stats.current_mp >= mp_cost:
+					stats.current_mp -= mp_cost
+					spell_cast.emit(self, spell_id, charge_target)
+					var damage = _calculate_magic_damage()
+					if charge_target.has_method("take_hit"):
+						charge_target.take_hit(damage)
+						if charge_target is Enemy and charge_target.state == Enemy.State.DEAD:
+							gain_exp(10 * charge_target.stats.level)
 	elif charge_action.begins_with("item:") and charge_target and is_instance_valid(charge_target):
 		var item_id = charge_action.trim_prefix("item:")
 		match item_id:
@@ -188,6 +209,12 @@ func _calculate_damage() -> int:
 	var base_damage = stats.get_attack_power()
 	# Simple variance
 	var variance = randf_range(0.85, 1.15)
+	return maxi(1, int(base_damage * variance))
+
+func _calculate_magic_damage() -> int:
+	# Fire: 2x STR + 1.5x level, ignores some defense
+	var base_damage = stats.strength * 2 + int(stats.level * 1.5)
+	var variance = randf_range(0.9, 1.2)
 	return maxi(1, int(base_damage * variance))
 
 func take_hit(damage: int) -> void:
@@ -238,6 +265,8 @@ func get_charge_text() -> String:
 	var display = charge_action
 	if display.begins_with("item:"):
 		display = display.trim_prefix("item:").replace("_", " ").capitalize()
+	elif display.begins_with("magic:"):
+		display = display.trim_prefix("magic:").replace("_", " ").capitalize()
 	if state == State.CHARGING:
 		return display.capitalize() + "..."
 	elif state == State.ACTING:

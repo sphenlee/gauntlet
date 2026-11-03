@@ -74,6 +74,7 @@ func _build_party() -> void:
 		character.damage_taken.connect(_on_character_damage_taken)
 		character.healed.connect(_on_character_healed)
 		character.levelled_up.connect(_on_character_levelled_up)
+		character.spell_cast.connect(_on_spell_cast)
 		# Initialize 5 empty tactic slots
 		for j in range(5):
 			character.tactics.append(Tactic.new())
@@ -128,6 +129,7 @@ func _create_player_character(char_name: String, color: Color) -> PlayerCharacte
 			stats.growth_def = 1
 			stats.growth_agl = 3
 			stats.growth_lck = 2
+			character.can_use_magic = true
 
 	character.stats = stats
 
@@ -214,6 +216,7 @@ func _build_ui() -> void:
 	command_menu.offset_bottom = -20
 	command_menu.action_selected.connect(_on_action_selected)
 	command_menu.item_selected.connect(_on_item_selected)
+	command_menu.magic_selected.connect(_on_magic_selected)
 	command_menu.menu_cancelled.connect(_on_menu_cancelled)
 	canvas.add_child(command_menu)
 	command_menu.setup()
@@ -450,6 +453,11 @@ func _handle_normal_input(event: InputEvent) -> void:
 			# Cancel any in-progress charge and prevent auto-repeat
 			leader.cancel_charge()
 			leader.last_attack_target = null
+			# Set available actions based on leader capabilities
+			var available_actions: Array[String] = ["Attack", "Item"]
+			if leader.can_use_magic:
+				available_actions.insert(1, "Magic")
+			command_menu.actions = available_actions
 			command_menu.open_menu()
 			_set_game_state(GameState.COMMAND_MENU)
 	elif event.is_action_pressed("enemy_select_next") or event.is_action_pressed("enemy_select_prev"):
@@ -482,10 +490,15 @@ func _handle_target_select_input(event: InputEvent) -> void:
 		selected_enemy_index = (selected_enemy_index - 1 + alive_enemies.size()) % alive_enemies.size()
 		_show_enemy_info(alive_enemies[selected_enemy_index])
 	elif event.is_action_pressed("action_confirm"):
-		# Confirm target for attack
 		var leader = party[party_leader_index]
 		var target = alive_enemies[selected_enemy_index]
-		leader.start_charge("attack", target, 1.5)
+		if pending_item_id.begins_with("magic:"):
+			# Magic spell — slower charge, no movement toward target
+			leader.start_charge(pending_item_id, target, 2.5)
+			pending_item_id = ""
+		else:
+			# Normal attack
+			leader.start_charge("attack", target, 1.5)
 		command_menu.close_menu()
 		_set_game_state(GameState.NORMAL)
 		enemy_info.hide_panel()
@@ -674,6 +687,17 @@ func _on_action_selected(action: String) -> void:
 		for key in items:
 			item_list.append({"id": key, "name": items[key]["name"], "count": items[key]["count"]})
 		command_menu.open_submenu(item_list)
+	elif action == "magic":
+		var leader = party[party_leader_index]
+		var spell_list: Array[Dictionary] = []
+		spell_list.append({
+			"id": "fire",
+			"name": "Fire",
+			"mp_cost": 10,
+			"count": 1,
+			"disabled": leader.stats.current_mp < 10,
+		})
+		command_menu.open_submenu(spell_list)
 
 func _on_item_selected(item_id: String) -> void:
 	pending_item_id = item_id
@@ -681,6 +705,19 @@ func _on_item_selected(item_id: String) -> void:
 	_set_game_state(GameState.PARTY_TARGET_SELECT)
 	selected_party_index = 0
 	character_info.selected_index = selected_party_index
+
+func _on_magic_selected(spell_id: String) -> void:
+	var alive_enemies = _get_alive_enemies()
+	if not alive_enemies.is_empty():
+		command_menu.lock_selection()
+		_set_game_state(GameState.TARGET_SELECT)
+		selected_enemy_index = 0
+		_show_enemy_info(alive_enemies[0])
+		# Store the pending spell so target confirm knows to cast magic
+		pending_item_id = "magic:" + spell_id
+	else:
+		command_menu.close_menu()
+		_set_game_state(GameState.NORMAL)
 
 func _on_menu_cancelled() -> void:
 	_set_game_state(GameState.NORMAL)
@@ -706,6 +743,13 @@ func _on_character_healed(character: PlayerCharacter, amount: int) -> void:
 func _on_character_levelled_up(character: PlayerCharacter) -> void:
 	_spawn_floating_number("LEVEL UP! Lv" + str(character.stats.level), Color(1.0, 1.0, 0.3), character.global_position)
 
+func _on_spell_cast(character: PlayerCharacter, spell_id: String, target: Node3D) -> void:
+	if spell_id == "fire" and is_instance_valid(target):
+		var projectile = FireProjectile.new()
+		projectile.process_mode = Node.PROCESS_MODE_PAUSABLE
+		add_child(projectile)
+		projectile.setup(character.global_position, target.global_position)
+
 func _on_enemy_damage_taken(enemy: Enemy, amount: int) -> void:
 	_spawn_floating_number(str(amount), Color(0.3, 0.6, 1.0), enemy.global_position)
 
@@ -716,7 +760,9 @@ func _spawn_floating_number(text: String, color: Color, pos: Vector3) -> void:
 	num.setup(text, color, pos)
 
 func _on_character_charge_started(character: PlayerCharacter, target: Node3D) -> void:
-	if character.charge_action.begins_with("item:"):
+	if character.charge_action.begins_with("magic:"):
+		_spawn_arc(character, target, Color(1.0, 0.3, 0.1))
+	elif character.charge_action.begins_with("item:"):
 		_spawn_arc(character, target, Color(0.2, 1.0, 0.3))
 	else:
 		_spawn_arc(character, target, Color(0.3, 0.6, 1.0))

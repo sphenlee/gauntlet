@@ -141,6 +141,7 @@ Characters have the following stats:
 * luck (LCK)
 
 Characters also have a level (LVL) and experience (EXP).
+Characters have skill points (SP) they can spend to learn new skills.
 
 Experience & Levelling
 ----------------------
@@ -170,6 +171,8 @@ A "LEVEL UP!" floating number appears above the character in yellow when they le
 The character info panel shows each character's level next to their name and an EXP bar
 showing progress toward the next level.
 
+Every level gained, the character gets 5 skill points (SP) to spend.
+
 Combat Actions
 --------------
 
@@ -191,7 +194,19 @@ Other weapons have higher power stats.
 
 Magic
 -----
-None for now
+See [magic.md](docs/magic.md)
+
+Elements
+--------
+Some enemies have elemental affinity. This means they might be resistant to a particular
+element (dealing half damage), or even absorb that element (damage heals instead). Enemies may also have a weakness for a specific element, causing it to do 1.5x damange.
+
+The elements are earth, water/aqua, lightning/thunder, fire, air/aero and ice/blizzard.
+(Some elements have slightly different names when naming spells).
+They come in opposed pairs:
+* earth <-> air
+* water <-> lightning
+* fire <-> ice
 
 Items
 -----
@@ -217,7 +232,9 @@ The main menu, opened by "X"/Triangle (playstation), or "M" on the keyboard.
 It shows the characters with their stats on the right, and the menu entries 
 on the left.
 
-For now, only one entry is visible - "Tactics".
+Show the following entries:
+ * Tactics - open tactics editor
+ * Skills - open the skill grid
 
 
 Tactics - Character "AI"
@@ -280,12 +297,20 @@ if the target already has 100% HP; item like revive (not implemented yet) will n
 get used if the character is not KO'ed (0 HP). Items will only be selected for
 use if the pary has enough in inventory.
 
+Skills
+------
+
+See [skill grid](docs/skills.md)
+
 Remaining TODOs
 ===============
 
 Combat & Actions
 ----------------
-* Magic system — red/green/blue/arcane spell schools with submenu
+* Magic system — red/green/blue/arcane spell schools (Fire implemented as MVP:
+  Mage only, 10 MP cost, 2.5s charge, ranged, 2x STR + 1.5x level damage,
+  fire projectile visual, red targeting arc)
+* More spells for each school
 * Status effects — buffs, debuffs, icons in character info area
 * More weapon types with different POW stats and ranges
 * Character stats screen in main menu (stats on right side)

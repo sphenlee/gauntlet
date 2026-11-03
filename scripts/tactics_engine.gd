@@ -15,7 +15,7 @@ static func evaluate(character: PlayerCharacter, tactics: Array[Tactic], party: 
 
 		# Check implicit conditions on each candidate, pick first valid
 		for target in candidates:
-			if _check_action_implicit(tactic.action, target, items):
+			if _check_action_implicit(tactic.action, target, items, character):
 				return _build_action(tactic.action, target)
 
 	return {}
@@ -61,7 +61,7 @@ static func _resolve_condition(character: PlayerCharacter, tactic: Tactic, party
 
 	return candidates
 
-static func _check_action_implicit(action: Tactic.Action, target: Node3D, items: Dictionary) -> bool:
+static func _check_action_implicit(action: Tactic.Action, target: Node3D, items: Dictionary, character: PlayerCharacter) -> bool:
 	match action:
 		Tactic.Action.ATTACK:
 			# Can only attack enemies
@@ -93,6 +93,17 @@ static func _check_action_implicit(action: Tactic.Action, target: Node3D, items:
 				return false
 			return true
 
+		Tactic.Action.SPELL_FIRE:
+			# Must have enough MP
+			if character.stats.current_mp < 10:
+				return false
+			# Can only target alive enemies
+			if not target is Enemy:
+				return false
+			if target.state == Enemy.State.DEAD:
+				return false
+			return true
+
 	return false
 
 static func _build_action(action: Tactic.Action, target: Node3D) -> Dictionary:
@@ -105,6 +116,8 @@ static func _build_action(action: Tactic.Action, target: Node3D) -> Dictionary:
 			return {"action": "item:hi_potion", "target": target, "charge_time": 1.0}
 		Tactic.Action.ITEM_REVIVE:
 			return {"action": "item:revive", "target": target, "charge_time": 1.0}
+		Tactic.Action.SPELL_FIRE:
+			return {"action": "magic:fire", "target": target, "charge_time": 2.5}
 	return {}
 
 static func _alive_enemies(enemies: Array[Enemy]) -> Array[Enemy]:
