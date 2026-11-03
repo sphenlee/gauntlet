@@ -67,8 +67,10 @@ When a character or enemy begins charging an action, a coloured arc is drawn bet
 the target — blue for player characters attacking, orange for enemies, green for item usage. The arc
 fades out over 2 seconds.
 
-Non-leader party members use a simple default tactic: automatically attack the nearest enemy after
-a short cooldown. This will be replaced by the configurable tactics system described below.
+All party members (including the leader) follow their configured tactics whenever they are idle.
+The default tactic for every character is "Enemy - Closest → Attack". Manual commands issued to
+the party leader via the command menu take precedence — tactics only fire when the leader is idle.
+Moving the leader with the left stick overrides the automatic charge movement temporarily.
 
 Controls
 --------
@@ -327,7 +329,6 @@ Tactics
 -------
 * More conditions (e.g. "Enemy - Weakest", "Ally - Being Targeted")
 * More actions as they are added (spells, defend, etc.)
-* Tactics for party leader (currently only non-leader members use tactics)
 * Save/load tactic configurations
 
 Visual & Audio

@@ -412,7 +412,7 @@ func _process(delta: float) -> void:
 		return
 	_handle_leader_movement()
 	_handle_follower_formation(delta)
-	_handle_auto_attacks(delta)
+	_handle_tactics(delta)
 	_update_camera_state()
 
 func _input(event: InputEvent) -> void:
@@ -585,11 +585,9 @@ func _handle_follower_formation(delta: float) -> void:
 		if is_instance_valid(follower):
 			follower.follow_target(leader.global_position, delta)
 
-func _handle_auto_attacks(delta: float) -> void:
-	# Evaluate tactics for non-leader party members
+func _handle_tactics(delta: float) -> void:
+	# Evaluate tactics for all party members (including leader when idle)
 	for i in range(party.size()):
-		if i == party_leader_index:
-			continue
 		var member = party[i]
 		if not is_instance_valid(member) or member.state != PlayerCharacter.State.IDLE:
 			continue

@@ -277,6 +277,7 @@ func apply_leader_input(input_dir: Vector2, cam_basis: Basis) -> void:
 	if state == State.DEAD:
 		return
 	if input_dir.length() > 0.1:
+		# Manual input overrides automatic (charge) movement
 		var dir = (cam_basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 		dir.y = 0
 		velocity.x = dir.x * move_speed
@@ -285,7 +286,8 @@ func apply_leader_input(input_dir: Vector2, cam_basis: Basis) -> void:
 		if dir.length() > 0.1:
 			var target_angle = atan2(dir.x, dir.z)
 			rotation.y = lerp_angle(rotation.y, target_angle, 0.15)
-	else:
+	elif state == State.IDLE:
+		# Only slow to stop when idle; charging handles its own movement
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
 
